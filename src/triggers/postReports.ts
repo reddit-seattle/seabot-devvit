@@ -1,11 +1,11 @@
 import { PostReportDefinition } from "@devvit/public-api";
-import { POST_REPORT_WEBHOOK } from "../settings";
-import { getItemDateString } from "../utils";
+import { POST_REPORT_WEBHOOK } from "../settings.js";
+import { getItemDateString } from "../utils.js";
 
 const LogPostReport: PostReportDefinition = {
     event: 'PostReport',
     onEvent: async (evt, ctx) => {
-        console.log(JSON.stringify(evt))
+        console.log(`Received Post Report:\n${JSON.stringify(evt)}`);
 
         const discordWebhookUrl = await ctx.settings.get(POST_REPORT_WEBHOOK);
         if (!discordWebhookUrl) {
@@ -15,13 +15,11 @@ const LogPostReport: PostReportDefinition = {
         const { reason, subreddit, post } = evt;
 
         const title = `New post reported`;
-        console.log(title);
-
         const submission = await ctx.reddit.getPostById(post?.id ?? '');
         const { modReportReasons, userReportReasons, title: postTitle, score, authorName, permalink } = submission;
 
         let truncatedTitle = postTitle.length > 100 ? `${postTitle.slice(0, 97)}...` : postTitle;
-        let desc = [`${truncatedTitle}`, `Report: ${reason}`].join('\n');
+        let desc = [`${truncatedTitle}`, `Reason: ${reason}`].join('\n');
         console.log(desc)
 
         const fields: Array<{ name: string, value: string }> = [
@@ -76,9 +74,8 @@ const LogPostReport: PostReportDefinition = {
             ],
             //  'thread_name': {}  // maybe this is a bad idea? like the forum channel idea tho
         };
-        console.dir(payload);
-
-        const response = await fetch(
+        console.log(`Sending webhook:\n${JSON.stringify(payload)}`);
+        await fetch(
             `${discordWebhookUrl}`,
             {
                 method: 'post',
@@ -88,7 +85,6 @@ const LogPostReport: PostReportDefinition = {
                 body: JSON.stringify(payload)
             }
         );
-        console.log(await response.json());
     }
 };
 export default LogPostReport;

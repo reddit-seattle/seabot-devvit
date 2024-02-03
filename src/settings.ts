@@ -1,5 +1,5 @@
 import { SettingScope, SettingsFormField } from "@devvit/public-api";
-import { validateURL } from "./utils";
+import { validateURL } from "./utils.js";
 
 const DISCORD_WEBHOOK_SUFFIX = "Discord channel webhook URL"
 export const POST_REPORT_WEBHOOK = 'postReportWebhookURL';

@@ -1,6 +1,6 @@
 import { ModMailDefinition } from "@devvit/public-api";
-import { parseConversationType, parseParticipantAuthor } from "../utils";
-import { MODMAIL_REPORT_WEBHOOK } from "../settings";
+import { parseConversationType, parseParticipantAuthor } from "../utils.js";
+import { MODMAIL_REPORT_WEBHOOK } from "../settings.js";
 
 const LogModmailMessage: ModMailDefinition = {
     event: 'ModMail',
@@ -57,7 +57,7 @@ const LogModmailMessage: ModMailDefinition = {
                 //  'thread_name': {}  // maybe this is a bad idea? like the forum channel idea tho
             };
             console.dir(payload);
-            const response = await fetch(
+            await fetch(
                 `${discordWebhookUrl}`,
                 {
                     method: 'post',
@@ -67,7 +67,6 @@ const LogModmailMessage: ModMailDefinition = {
                     body: JSON.stringify(payload)
                 }
             );
-            console.log(await response.json());
 
         }
     },

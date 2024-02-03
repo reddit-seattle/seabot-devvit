@@ -1,10 +1,11 @@
 import { Comment, CommentReportDefinition } from "@devvit/public-api";
-import { COMMENT_REPORT_WEBHOOK } from "../settings";
-import { getItemDateString } from "../utils";
+import { COMMENT_REPORT_WEBHOOK } from "../settings.js";
+import { getItemDateString } from "../utils.js";
 
 const LogCommentDefinition: CommentReportDefinition = {
     event: 'CommentReport',
     onEvent: async (evt, ctx) => {
+        console.log(`Received Comment Report:\n${JSON.stringify(evt)}`);
 
         // if we don't have a webhook, skip
         const discordWebhookUrl = await ctx.settings.get(COMMENT_REPORT_WEBHOOK);
@@ -12,13 +13,11 @@ const LogCommentDefinition: CommentReportDefinition = {
             return;
         }
 
-        console.log(JSON.stringify(evt))
         const { reason, subreddit, comment } = evt;
         const title = `New comment reported`;
-        console.log(title);
         const submission: Comment = await ctx.reddit.getCommentById(comment?.id ?? '');
         const { modReportReasons, userReportReasons, body, score, authorName, permalink } = submission;
-        let desc = `Report: ${reason}`;
+        let desc = `Reason: ${reason}`;
         console.log(desc)
 
         const fields: Array<{ name: string, value: string }> = [];
@@ -76,9 +75,8 @@ const LogCommentDefinition: CommentReportDefinition = {
             ],
             //  'thread_name': {}  // maybe this is a bad idea? like the forum channel idea tho
         };
-        console.dir(payload);
-
-        const response = await fetch(
+        console.log(`Sending webhook:\n${JSON.stringify(payload)}`);
+        await fetch(
             `${discordWebhookUrl}`,
             {
                 method: 'post',
@@ -88,7 +86,6 @@ const LogCommentDefinition: CommentReportDefinition = {
                 body: JSON.stringify(payload)
             }
         );
-        console.log(await response.json());
     }
 }
 
