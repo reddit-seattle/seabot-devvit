@@ -41,6 +41,10 @@ const AddCommentToRestrictedFlairPost: PostFlairUpdateDefinition = {
         });
         await comment.distinguish(true);
         await comment.lock();
+        console.log(
+          "Added comment to restricted flair post:",
+          `https://reddit.com${comment.permalink}`
+        );
       }
     } catch (error) {
       console.error("Error in PostFlairTrigger:", error);

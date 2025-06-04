@@ -7,17 +7,17 @@ const RestrictPostToFlairedUsers: MenuItem = {
   location: "post",
   forUserType: "moderator",
   onPress: async (event, context) => {
-    console.log(
-      "RestrictPostToFlairedUsers triggered for post:",
-      event.targetId
-    );
     const { targetId } = event;
     if (!targetId) {
-      console.error("Action has no target.");
+      console.error("Menu action has no target.");
       return;
     }
     // Check if the post already has the restricted flair
     const post = await context.reddit.getPostById(targetId);
+    console.log(
+      "Checking post for existing restricted flair:",
+      `https://reddit.com${post.permalink}`
+    );
     if (post?.flair?.text === RESTRICTED_FLAIR_TEXT) {
       const message = `This post is already restricted to flaired users.`;
       console.log(message);
