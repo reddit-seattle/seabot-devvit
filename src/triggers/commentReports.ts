@@ -64,10 +64,10 @@ const LogCommentDefinition: CommentReportDefinition = {
     }
 
     const embed = {
-      ...{ title },
+      title,
       type: "rich",
       description: desc,
-      fields: [...fields],
+      fields,
     };
     const payload = {
       embeds: [embed],

@@ -69,7 +69,7 @@ const LogPostReport: PostReportDefinition = {
           title,
           type: "rich",
           description: desc,
-          fields: [...fields],
+          fields,
         },
       ],
     };
