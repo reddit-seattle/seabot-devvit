@@ -2,9 +2,9 @@ import { SettingScope, SettingsFormField } from "@devvit/public-api";
 import { validateURL } from "./utils.js";
 
 export const RESTRICTED_FLAIR_TEXT = "Market Traffic Only";
-export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - Only flaired users are able to comment.
+export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - New comments by users without an equipped r/Seattle flair will be automatically removed.
 
-Comments by users without an assigned r/Seattle flair will automatically be removed.`;
+Existing comments are not removed when this action is applied, **please do not report missing flair** in these threads.`;
 
 const DISCORD_WEBHOOK_SUFFIX = "Discord channel webhook URL";
 export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
