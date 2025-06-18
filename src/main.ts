@@ -6,7 +6,17 @@ import RestrictPostToFlairedUsers from "./triggers/modMenuItems.js";
 import AddCommentToRestrictedFlairPost from "./triggers/postFlair.js";
 import LogPostReport from "./triggers/postReports.js";
 
-Devvit.configure({ redditAPI: true, http: true });
+Devvit.configure({
+  redditAPI: true,
+  http: {
+    domains: [
+      "https://api-web.nhle.com",  // NHL API
+      "https://api.nhle.com/stats/rest",  // NHL REST API
+      "https://statsapi.mlb.com/api/",  // MLB stats API
+    ],
+    enabled: true,
+  },
+});
 
 /**
  * Logs modmail messages
