@@ -11,8 +11,8 @@ Devvit.configure({
   http: {
     domains: [
       "https://api-web.nhle.com",  // NHL API
-      "https://api.nhle.com/stats/rest",  // NHL REST API
-      "https://statsapi.mlb.com/api/",  // MLB stats API
+      "https://api.nhle.com",  // NHL REST API
+      "https://statsapi.mlb.com",  // MLB stats API
     ],
     enabled: true,
   },
