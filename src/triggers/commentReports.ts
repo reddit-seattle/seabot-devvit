@@ -14,18 +14,31 @@ const LogCommentDefinition: CommentReportDefinition = {
     }
 
     const { reason, comment } = evt;
-    const title = `New comment reported`;
     const submission: Comment = await ctx.reddit.getCommentById(
       comment?.id ?? ""
     );
     const {
+      ignoringReports,
       modReportReasons,
       userReportReasons,
       score,
       authorName,
       permalink,
     } = submission;
+    if (ignoringReports) {
+      if (!comment?.body) {
+        console.log("Ignoring report for comment with no body:", `[${comment?.id}](https://reddit.com${permalink})`);
+        return; // don't log ignored reports
+      } else {
+        // if the comment body is too long, truncate it
+        const truncatedBody = comment.body.length > 100
+          ? `${comment.body.slice(0, 97)}...`
+          : comment.body;
+        console.log("Ignoring report for comment:", `[${truncatedBody}](https://reddit.com${permalink})`);
+      }
+    }
 
+    const title = `New comment reported`;
     let desc = `Reason: ${reason}`;
 
     const fields: Array<{ name: string; value: string }> = [];

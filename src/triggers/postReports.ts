@@ -14,9 +14,9 @@ const LogPostReport: PostReportDefinition = {
 
     const { reason, post } = evt;
 
-    const title = `New post reported`;
     const submission = await ctx.reddit.getPostById(post?.id ?? "");
     const {
+      ignoringReports,
       modReportReasons,
       userReportReasons,
       title: postTitle,
@@ -24,7 +24,13 @@ const LogPostReport: PostReportDefinition = {
       authorName,
       permalink,
     } = submission;
+    if (ignoringReports) {
+      const truncatedTitle = postTitle.length > 100 ? `${postTitle.slice(0, 97)}...` : postTitle;
+      console.log("Ignoring report for post:", `[${truncatedTitle}](https://reddit.com${permalink})`);
+      return; // don't log ignored reports
+    }
 
+    const title = `New post reported`;
     let truncatedTitle =
       postTitle.length > 100 ? `${postTitle.slice(0, 97)}...` : postTitle;
     let desc = [`${truncatedTitle}`, `Reason: ${reason}`].join("\n");
