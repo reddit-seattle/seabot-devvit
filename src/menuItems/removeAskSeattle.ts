@@ -1,5 +1,6 @@
 import { MenuItem } from "@devvit/public-api";
 import { removeWithReason } from "../utils/removalHelper.js";
+import { createResubmissionLink } from "../utils/reddithelpers.js";
 
 const RemoveAskSeattle: MenuItem = {
   label: "Remove for r/AskSeattle",
@@ -14,12 +15,19 @@ const RemoveAskSeattle: MenuItem = {
     }
 
     try {
+      // Get the post to generate resubmission link
+      const post = await context.reddit.getPostById(targetId);
+      const { title, url, body } = post;
+      
+      const footer = createResubmissionLink("AskSeattle", title, url, body);
+
       await removeWithReason({
         targetId,
         context,
         ruleSearchTerms: ["askseattle", "rule 5"],
         modNote: "Removed via AskSeattle macro - Rule 5 violation",
-        isPost: true
+        isPost: true,
+        footer
       });
     } catch (error) {
       console.error("Error processing r/AskSeattle removal:", error);

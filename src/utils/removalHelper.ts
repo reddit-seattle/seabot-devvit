@@ -9,13 +9,15 @@ export interface RemovalOptions {
     modNote?: string;
     /** Whether this is a post (true) or comment (false) */
     isPost: boolean;
+    /** Optional footer text to append to the removal comment */
+    footer?: string;
 }
 
 /**
  * Generic helper function to remove posts or comments with official removal reasons
  */
 export async function removeWithReason(options: RemovalOptions): Promise<void> {
-    const { targetId, context, ruleSearchTerms, modNote, isPost } = options;
+    const { targetId, context, ruleSearchTerms, modNote, isPost, footer } = options;
     const itemType = isPost ? 'post' : 'comment';
 
     // Get the target item
@@ -69,9 +71,16 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
     }
 
     // Add the moderation comment using the fetched removal reason
+    let commentText = matchingReason.message;
+    
+    // Append footer if provided
+    if (footer) {
+        commentText += `\n\n---\n\n${footer}`;
+    }
+
     const comment = await context.reddit.submitComment({
         id: targetId,
-        text: matchingReason.message,
+        text: commentText,
         runAs: "APP",
     });
 
