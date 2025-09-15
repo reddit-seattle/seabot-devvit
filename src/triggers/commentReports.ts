@@ -17,10 +17,6 @@ import {
   formatReportReasons,
   createDiscordField,
   createEmbedFooter,
-  type UserInfo,
-  type ScoreInfo,
-  type CommentInfo,
-  type PostInfo,
 } from "../utils/discordFormatters.js";
 
 const LogCommentDefinition: CommentReportDefinition = {
@@ -38,12 +34,11 @@ const LogCommentDefinition: CommentReportDefinition = {
     const submission: Comment = await ctx.reddit.getCommentById(
       comment?.id ?? ""
     );
+
     const {
       ignoringReports,
       modReportReasons,
       userReportReasons,
-      score,
-      authorName,
       authorId,
       permalink,
     } = submission;
@@ -62,16 +57,11 @@ const LogCommentDefinition: CommentReportDefinition = {
 
     const title = `${EMOJI_COMMENT} New comment reported`;
 
-    // Create description with comment in markdown code blocks first, then reason
-    let desc = `**Reason:** ${reason}`;
-    if (comment?.body) {
-      const commentInfo: CommentInfo = {
-        body: comment.body,
-        maxLength: 400 // Shorter for description
-      };
-
-      desc = `**Comment:**\n${formatCommentContent(commentInfo)}\n**Reason:** ${reason}`;
-    }
+    // Create description with comment permalink, content, and reason
+    const commentPermalink = createPermalinkLink(permalink, "Direct Comment Link");
+    const desc = comment?.body
+      ? `${commentPermalink}\n**Comment:**\n${formatCommentContent(comment, 400)}\n**Reason:** ${reason}`
+      : `${commentPermalink}\n**Reason:** ${reason}`;
 
     const post = await ctx.reddit.getPostById(submission.postId);
     const author = await ctx.reddit.getUserById(authorId ?? "");
@@ -79,43 +69,25 @@ const LogCommentDefinition: CommentReportDefinition = {
     const fields: Array<{ name: string; value: string }> = [];
 
     // User information field
-    const userInfo: UserInfo = {
-      authorName,
-      authorId,
-      linkKarma: author?.linkKarma,
-      commentKarma: author?.commentKarma,
-      createdAt: author?.createdAt,
-    };
-
-    fields.push(createDiscordField(
-      "User",
-      formatUserInfo(userInfo, submission)
-    ));
+    if (author) {
+      fields.push(createDiscordField(
+        "User",
+        formatUserInfo(author)
+      ));
+    }
 
     // Post context field
-    const postInfo: PostInfo = {
-      title: post?.title || "Unknown Post",
-      permalink: createPermalinkLink(post?.permalink || permalink, post?.title || "Unknown Post"),
-      numberOfComments: post?.numberOfComments,
-    };
+    const postLink = createPermalinkLink(post?.permalink || permalink, post?.title || "Unknown Post");
 
     fields.push(createDiscordField(
       "Post",
-      postInfo.permalink
+      postLink
     ));
 
-    // Comment statistics field (includes consolidated karma)
-    const scoreInfo: ScoreInfo = {
-      score,
-      upvotes: comment?.upvotes,
-      downvotes: comment?.downvotes,
-      numReports: submission?.numReports,
-      collapsedBecauseCrowdControl: submission?.collapsedBecauseCrowdControl,
-    };
-
+    // Comment statistics field
     fields.push(createDiscordField(
       `${EMOJI_STATS} Statistics`,
-      formatScoreInfo(scoreInfo)
+      formatScoreInfo(submission)
     ));
 
     // Mod reports field

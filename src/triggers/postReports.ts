@@ -16,9 +16,6 @@ import {
   formatReportReasons,
   createDiscordField,
   createEmbedFooter,
-  type UserInfo,
-  type ScoreInfo,
-  type PostInfo
 } from "../utils/discordFormatters.js";
 
 const LogPostReport: PostReportDefinition = {
@@ -40,8 +37,6 @@ const LogPostReport: PostReportDefinition = {
         modReportReasons,
         userReportReasons,
         title: postTitle,
-        score,
-        authorName,
         permalink,
       } = submission;
       if (ignoringReports) {
@@ -51,11 +46,8 @@ const LogPostReport: PostReportDefinition = {
       }
 
       const title = `${EMOJI_POST} New post reported`;
-      const postInfo: PostInfo = {
-        title: postTitle,
-        permalink: createPermalinkLink(permalink, postTitle)
-      };
-      const desc = `**Post:** ${postInfo.permalink}\n**Reason:** ${reason}`;
+      const postLink = createPermalinkLink(permalink, postTitle);
+      const desc = `**Post:** ${postLink}\n**Reason:** ${reason}`;
 
       const fields: Array<{ name: string; value: string }> = [];
 
@@ -67,31 +59,19 @@ const LogPostReport: PostReportDefinition = {
         console.error("Failed to get user by ID:", error);
         // Continue with null author data
       }
-      
-      const userInfo: UserInfo = {
-        authorName,
-        linkKarma: author?.linkKarma,
-        commentKarma: author?.commentKarma,
-        createdAt: author?.createdAt,
-      };
 
       // User field
-      fields.push(createDiscordField(
-        "User",
-        formatUserInfo(userInfo, submission)
-      ));
+      if (author) {
+        fields.push(createDiscordField(
+          "User",
+          formatUserInfo(author)
+        ));
+      }
 
-      // Post statistics field (includes consolidated karma)
-      const scoreInfo: ScoreInfo = {
-        score,
-        upvotes: post?.upvotes,
-        downvotes: post?.downvotes,
-        numReports: post?.numReports,
-      };
-
+      // Post statistics field
       fields.push(createDiscordField(
         `${EMOJI_STATS} Statistics`,
-        formatScoreInfo(scoreInfo, submission.numberOfComments)
+        formatScoreInfo(submission)
       ));
 
       // Report reasons fields

@@ -5,13 +5,12 @@ import {
     formatReportReasons,
     createDiscordField,
     createEmbedFooter,
-    type UserInfo,
-    type ScoreInfo,
-    type PostInfo,
-    type CommentInfo
+    type CommentInfo,
+    type PostWithVotes,
+    type CommentWithVotes
 } from './discordFormatters.js';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Comment, Post } from '@devvit/public-api';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Comment, Post, User } from '@devvit/public-api';
 
 // Mock the dependencies
 vi.mock('./reddithelpers.js', () => ({
@@ -30,51 +29,49 @@ describe('discordFormatters', () => {
 
     describe('formatUserInfo', () => {
         it('should format basic user info with username link', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser'
-            };
+            const user = {
+                username: 'testuser'
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)'
             ]);
         });
 
-        it('should include submission creation date when provided', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser'
-            };
-            const submission = {
-                createdAt: new Date('2025-01-01T00:00:00Z')
-            } as Comment;
+        it('should include user account creation date when provided', () => {
+            const user = {
+                username: 'testuser',
+                createdAt: new Date('2024-01-01T00:00:00Z')
+            } as User;
 
-            const result = formatUserInfo(userInfo, submission);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
-                'Created: <t:1735689600:R>'
+                'Created: <t:1704067200:R>'
             ]);
         });
 
         it('should include user account creation date when no submission provided', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser',
+            const user = {
+                username: 'testuser',
                 createdAt: new Date('2024-01-01T00:00:00Z')
-            };
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
-                'Account created: <t:1704067200:R>'
+                'Created: <t:1704067200:R>'
             ]);
         });
 
         it('should handle unknown username', () => {
-            const userInfo: UserInfo = {};
+            const user = {} as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/unknown](https://reddit.com/user/unknown)'
@@ -82,12 +79,12 @@ describe('discordFormatters', () => {
         });
 
         it('should handle user with no createdAt date and no submission', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser'
+            const user = {
+                username: 'testuser'
                 // No createdAt property
-            };
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)'
@@ -96,13 +93,13 @@ describe('discordFormatters', () => {
         });
 
         it('should include karma information when provided', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser',
+            const user = {
+                username: 'testuser',
                 linkKarma: 1500,
                 commentKarma: 850
-            };
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
@@ -111,12 +108,12 @@ describe('discordFormatters', () => {
         });
 
         it('should handle missing karma gracefully', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser'
+            const user = {
+                username: 'testuser'
                 // No karma provided
-            };
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             // Should not include karma line if no karma data available
             expect(result).toEqual([
@@ -125,12 +122,11 @@ describe('discordFormatters', () => {
         });
 
         it('should handle submission without createdAt date', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser'
-            };
-            const submission = {} as Comment; // No createdAt
+            const user = {
+                username: 'testuser'
+            } as User;
 
-            const result = formatUserInfo(userInfo, submission);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)'
@@ -138,13 +134,13 @@ describe('discordFormatters', () => {
         });
 
         it('should include only link karma when comment karma is 0', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser',
+            const user = {
+                username: 'testuser',
                 linkKarma: 100,
                 commentKarma: 0
-            };
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
@@ -153,13 +149,13 @@ describe('discordFormatters', () => {
         });
 
         it('should include only comment karma when link karma is 0', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser',
+            const user = {
+                username: 'testuser',
                 linkKarma: 0,
                 commentKarma: 200
-            };
+            } as User;
 
-            const result = formatUserInfo(userInfo);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
@@ -167,69 +163,92 @@ describe('discordFormatters', () => {
             ]);
         });
 
-        it('should include both submission date and karma', () => {
-            const userInfo: UserInfo = {
-                authorName: 'testuser',
+        it('should include user account date and karma', () => {
+            const user = {
+                username: 'testuser',
                 linkKarma: 2500,
-                commentKarma: 1200
-            };
-            const submission = {
-                createdAt: new Date('2025-01-01T00:00:00Z')
-            } as Comment;
+                commentKarma: 1200,
+                createdAt: new Date('2024-01-01T00:00:00Z')
+            } as User;
 
-            const result = formatUserInfo(userInfo, submission);
+            const result = formatUserInfo(user);
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
-                'Created: <t:1735689600:R>',
+                'Created: <t:1704067200:R>', // User account creation date (2024), not submission date (2025)
                 'Karma: **2500** link, **1200** comment'
             ]);
         });
     });
 
     describe('formatScoreInfo', () => {
-        it('should format basic score information', () => {
-            const scoreInfo: ScoreInfo = {
+        it('should format basic score information from submission', () => {
+            const mockSubmission = {
                 score: 42,
                 upvotes: 50,
                 downvotes: 8,
-                numReports: 2
-            };
+                numReports: 2,
+                createdAt: new Date('2025-01-12T14:30:00Z')
+            } as CommentWithVotes;
 
-            const result = formatScoreInfo(scoreInfo);
+            const result = formatScoreInfo(mockSubmission);
 
             expect(result).toEqual([
                 '50 <:upvote:607100359328006166> 8 <:downvote:607100771028172820> [**42**]',
+                'Created: <t:1736692200:R>',
                 'Total Reports: **2**'
             ]);
         });
 
-        it('should include comments count when provided', () => {
-            const scoreInfo: ScoreInfo = {
+        it('should include comments count for posts', () => {
+            const mockPost = {
                 score: 42,
                 upvotes: 50,
                 downvotes: 8,
-                numReports: 2
-            };
+                numReports: 2,
+                numberOfComments: 15,
+                createdAt: new Date('2025-01-12T14:30:00Z')
+            } as any;
 
-            const result = formatScoreInfo(scoreInfo, 15);
+            const result = formatScoreInfo(mockPost);
 
             expect(result).toEqual([
                 '50 <:upvote:607100359328006166> 8 <:downvote:607100771028172820> [**42**]',
+                'Created: <t:1736692200:R>',
                 'Comments: **15**',
                 'Total Reports: **2**'
             ]);
         });
 
+        it('should extract comment count from submission when provided', () => {
+            const mockPost = {
+                score: 42,
+                upvotes: 50,
+                downvotes: 8,
+                numReports: 2,
+                numberOfComments: 25,
+                createdAt: new Date('2025-01-12T14:30:00Z')
+            } as any;
+
+            const result = formatScoreInfo(mockPost);
+
+            expect(result).toEqual([
+                '50 <:upvote:607100359328006166> 8 <:downvote:607100771028172820> [**42**]',
+                'Created: <t:1736692200:R>',
+                'Comments: **25**',
+                'Total Reports: **2**'
+            ]);
+        });
+
         it('should not include karma information (moved to formatUserInfo)', () => {
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: 42,
                 upvotes: 50,
                 downvotes: 8,
                 numReports: 2
-            };
+            } as CommentWithVotes;
 
-            const result = formatScoreInfo(scoreInfo);
+            const result = formatScoreInfo(mockSubmission);
 
             expect(result).toEqual([
                 '50 <:upvote:607100359328006166> 8 <:downvote:607100771028172820> [**42**]',
@@ -238,15 +257,15 @@ describe('discordFormatters', () => {
         });
 
         it('should include crowd control when present', () => {
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: -5,
                 upvotes: 2,
                 downvotes: 7,
                 numReports: 1,
                 collapsedBecauseCrowdControl: true
-            };
+            } as CommentWithVotes;
 
-            const result = formatScoreInfo(scoreInfo);
+            const result = formatScoreInfo(mockSubmission);
 
             expect(result).toEqual([
                 '2 <:upvote:607100359328006166> 7 <:downvote:607100771028172820> [**-5**]',
@@ -256,29 +275,29 @@ describe('discordFormatters', () => {
         });
 
         it('should handle missing karma gracefully', () => {
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: 42,
                 numReports: 2
-            };
+            } as CommentWithVotes;
 
-            const result = formatScoreInfo(scoreInfo);
+            const result = formatScoreInfo(mockSubmission);
 
             expect(result).toEqual([
-                '0 <:upvote:607100359328006166> 0 <:downvote:607100771028172820> [**42**]',
+                'Score: **42**',
                 'Total Reports: **2**'
             ]);
         });
 
         it('should not include crowd control when false', () => {
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: 10,
                 upvotes: 12,
                 downvotes: 2,
                 numReports: 0,
                 collapsedBecauseCrowdControl: false
-            };
+            } as CommentWithVotes;
 
-            const result = formatScoreInfo(scoreInfo);
+            const result = formatScoreInfo(mockSubmission);
 
             expect(result).toEqual([
                 '12 <:upvote:607100359328006166> 2 <:downvote:607100771028172820> [**10**]',
@@ -287,13 +306,13 @@ describe('discordFormatters', () => {
         });
 
         it('should handle missing numReports', () => {
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: 25,
                 upvotes: 30,
                 downvotes: 5
-            };
+            } as CommentWithVotes;
 
-            const result = formatScoreInfo(scoreInfo);
+            const result = formatScoreInfo(mockSubmission);
 
             expect(result).toEqual([
                 '30 <:upvote:607100359328006166> 5 <:downvote:607100771028172820> [**25**]',
@@ -316,11 +335,10 @@ describe('discordFormatters', () => {
         it('should truncate long comments', () => {
             const longComment = 'a'.repeat(600);
             const commentInfo: CommentInfo = {
-                body: longComment,
-                maxLength: 100
+                body: longComment
             };
 
-            const result = formatCommentContent(commentInfo);
+            const result = formatCommentContent(commentInfo, 100);
 
             expect(result).toBe('```\n' + 'a'.repeat(97) + '...\n```');
         });
@@ -356,11 +374,10 @@ describe('discordFormatters', () => {
 
         it('should not truncate comment when exactly at max length', () => {
             const commentInfo: CommentInfo = {
-                body: 'a'.repeat(100),
-                maxLength: 100
+                body: 'a'.repeat(100)
             };
 
-            const result = formatCommentContent(commentInfo);
+            const result = formatCommentContent(commentInfo, 100);
 
             expect(result).toBe('```\n' + 'a'.repeat(100) + '\n```');
         });
@@ -426,44 +443,46 @@ describe('discordFormatters', () => {
             vi.useRealTimers();
         });
 
-        it('should create footer with formatted date and ISO timestamp', () => {
+        it('should create footer with Seattle timezone timestamp', () => {
             const result = createEmbedFooter();
 
-            // Check that the structure is correct and timestamp is ISO format
+            // Check that the structure is correct - no more ISO timestamp
             expect(result).toHaveProperty('footer');
-            expect(result).toHaveProperty('timestamp');
+            expect(result).not.toHaveProperty('timestamp');
             expect(result.footer).toHaveProperty('text');
-            expect(result.timestamp).toBe('2025-09-15T12:00:00.000Z');
 
-            // Check that the footer text contains expected elements
+            // Check that the footer text contains expected elements in Seattle time
+            expect(result.footer.text).toContain('Report received at');
             expect(result.footer.text).toContain('September 15, 2025');
             expect(result.footer.text).toMatch(/\d{1,2}:\d{2} [AP]M/); // Contains time in AM/PM format
+            expect(result.footer.text).toContain('PT'); // Pacific Time
         });
     });
 
     describe('Integration tests for Discord embed structure', () => {
         it('should create consistent comment report embed structure', () => {
-            const userInfo: UserInfo = {
-                authorName: 'spammer123',
+            const user = {
+                username: 'spammer123',
                 linkKarma: 45,
                 commentKarma: -23
-            };
+            } as User;
 
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: -12,
                 upvotes: 1,
                 downvotes: 13,
                 numReports: 3,
-                collapsedBecauseCrowdControl: true
-            };
+                collapsedBecauseCrowdControl: true,
+                createdAt: new Date('2025-01-12T14:30:00Z')
+            } as any;
 
             const commentInfo: CommentInfo = {
                 body: 'This is spam content'
             };
 
             // Test that all required fields can be generated
-            const userField = createDiscordField('User', formatUserInfo(userInfo));
-            const statsField = createDiscordField('📊 Statistics', formatScoreInfo(scoreInfo));
+            const userField = createDiscordField('User', formatUserInfo(user));
+            const statsField = createDiscordField('📊 Statistics', formatScoreInfo(mockSubmission));
             const commentContent = formatCommentContent(commentInfo);
             const userReports = formatReportReasons(['Spam', 'Self-promotion'], '🔹');
             const modReports = formatReportReasons(['Potential bot account'], '🔸');
@@ -475,6 +494,7 @@ describe('discordFormatters', () => {
             expect(statsField.name).toBe('📊 Statistics');
             expect(statsField.value).toContain('[**-12**]');
             expect(statsField.value).toContain('Crowd Control: **Yes**');
+            expect(statsField.value).toContain('Created: <t:1736692200:R>'); // Comment creation date
             expect(statsField.value).not.toContain('Karma:'); // Karma moved to user field
 
             expect(commentContent).toBe('```\nThis is spam content\n```');
@@ -483,27 +503,29 @@ describe('discordFormatters', () => {
         });
 
         it('should create consistent post report embed structure', () => {
-            const userInfo: UserInfo = {
-                authorName: 'scammer456',
+            const user = {
+                username: 'scammer456',
                 linkKarma: 156,
                 commentKarma: 892
-            };
+            } as User;
 
-            const scoreInfo: ScoreInfo = {
+            const mockSubmission = {
                 score: 5,
                 upvotes: 13,
                 downvotes: 18,
-                numReports: 7
-            };
+                numReports: 7,
+                numberOfComments: 12,
+                createdAt: new Date('2025-01-12T14:30:00Z')
+            } as any;
 
-            const postInfo: PostInfo = {
+            const postInfo = {
                 title: 'Looking for roommate - $500/month amazing deal downtown!',
                 permalink: 'https://old.reddit.com/r/Seattle/comments/abc123'
             };
 
             // Test that all required fields can be generated
-            const userField = createDiscordField('User', formatUserInfo(userInfo));
-            const statsField = createDiscordField('📊 Statistics', formatScoreInfo(scoreInfo, 12));
+            const userField = createDiscordField('User', formatUserInfo(user));
+            const statsField = createDiscordField('📊 Statistics', formatScoreInfo(mockSubmission));
             const postLink = postInfo.permalink;
             const userReports = formatReportReasons(['Housing scam', 'Too good to be true'], '🔹');
             const modReports = formatReportReasons(['Known scammer pattern'], '🔸');
@@ -515,6 +537,7 @@ describe('discordFormatters', () => {
             expect(statsField.name).toBe('📊 Statistics');
             expect(statsField.value).toContain('[**5**]');
             expect(statsField.value).toContain('Comments: **12**');
+            expect(statsField.value).toContain('Created: <t:1736692200:R>'); // Post creation date
             expect(statsField.value).not.toContain('Karma:'); // Karma moved to user field
 
             expect(postLink).toBe('https://old.reddit.com/r/Seattle/comments/abc123');
