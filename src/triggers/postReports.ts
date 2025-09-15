@@ -2,6 +2,7 @@ import { PostReportDefinition } from "@devvit/public-api";
 import { POST_REPORT_WEBHOOK } from "../settings.js";
 import { getItemDateString } from "../utils/parsers.js";
 import { SendContentToWebhook } from "../utils/webhooks.js";
+import { createPermalinkLink, createUserLink } from "../utils/reddithelpers.js";
 
 const LogPostReport: PostReportDefinition = {
   event: "PostReport",
@@ -27,7 +28,7 @@ const LogPostReport: PostReportDefinition = {
     } = submission;
     if (ignoringReports) {
       const truncatedTitle = postTitle.length > 100 ? `${postTitle.slice(0, 97)}...` : postTitle;
-      console.log("Ignoring report for post:", `[${truncatedTitle}](https://reddit.com${permalink})`);
+      console.log("Ignoring report for post:", createPermalinkLink(permalink, truncatedTitle));
       return; // don't log ignored reports
     }
 
@@ -39,8 +40,8 @@ const LogPostReport: PostReportDefinition = {
       {
         name: "Details:",
         value: [
-          `Permalink: [${permalink}](https://reddit.com${permalink})`,
-          `Author: [${authorName}](https://reddit.com/u/${authorName})`,
+          createPermalinkLink(permalink, `Permalink`),
+          createUserLink(authorName),
           `Created ${getItemDateString(submission)}`,
           `Score: **${score}** [${post?.upvotes} up | ${post?.downvotes} down]`,
           `Comments: ${submission.numberOfComments}`,

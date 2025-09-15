@@ -1,4 +1,5 @@
 import { Comment, Participant, Post } from "@devvit/public-api";
+import { createUserLink } from "./reddithelpers.js";
 
 export const parseParticipantAuthor = (author: Participant | undefined) => {
   let output = "";
@@ -7,7 +8,7 @@ export const parseParticipantAuthor = (author: Participant | undefined) => {
   } else if (author?.isAdmin) {
     output += `[ADMIN] `;
   }
-  output += `[${author?.name}](https://reddit.com/u/${author?.name})`;
+  output += createUserLink(author?.name || "unknown");
   if (author?.isOp) {
     output = `**${output}**`;
   }

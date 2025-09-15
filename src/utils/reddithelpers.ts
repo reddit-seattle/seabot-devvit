@@ -13,6 +13,26 @@ export function createMarkdownLink(text: string, url: string): string {
 }
 
 /**
+ * Creates a markdown link to a Reddit user profile
+ * @param username - The username (with or without u/ prefix)
+ * @returns A markdown link to the user's profile
+ */
+export function createUserLink(username: string): string {
+    const cleanUsername = username.replace(/^u\//, ''); // Remove u/ prefix if present
+    return createMarkdownLink(username, `https://reddit.com/u/${cleanUsername}`);
+}
+
+/**
+ * Creates a markdown link to a Reddit permalink
+ * @param permalink - The permalink path (should start with /)
+ * @param linkText - The text to display for the link
+ * @returns A markdown link to the Reddit permalink
+ */
+export function createPermalinkLink(permalink: string, linkText: string): string {
+    return createMarkdownLink(linkText, `https://reddit.com${permalink}`);
+}
+
+/**
  * Creates a Reddit resubmission link using old.reddit.com format
  * @param targetSubreddit - The subreddit to resubmit to (accepts "subreddit", "r/subreddit", or "/r/subreddit")
  * @param originalTitle - The original post title

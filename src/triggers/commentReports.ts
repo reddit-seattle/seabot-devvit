@@ -2,6 +2,7 @@ import { Comment, CommentReportDefinition } from "@devvit/public-api";
 import { COMMENT_REPORT_WEBHOOK } from "../settings.js";
 import { getItemDateString } from "../utils/parsers.js";
 import { SendContentToWebhook } from "../utils/webhooks.js";
+import { createPermalinkLink, createUserLink } from "../utils/reddithelpers.js";
 
 const LogCommentDefinition: CommentReportDefinition = {
   event: "CommentReport",
@@ -28,14 +29,14 @@ const LogCommentDefinition: CommentReportDefinition = {
     } = submission;
     if (ignoringReports) {
       if (!comment?.body) {
-        console.log("Ignoring report for comment with no body:", `[${comment?.id}](https://reddit.com${permalink})`);
+        console.log("Ignoring report for comment with no body:", createPermalinkLink(permalink, comment?.id || "unknown"));
         return; // don't log ignored reports
       } else {
         // if the comment body is too long, truncate it
         const truncatedBody = comment.body.length > 100
           ? `${comment.body.slice(0, 97)}...`
           : comment.body;
-        console.log("Ignoring report for comment:", `[${truncatedBody}](https://reddit.com${permalink})`);
+        console.log("Ignoring report for comment:", createPermalinkLink(permalink, truncatedBody));
       }
     }
 
@@ -47,8 +48,8 @@ const LogCommentDefinition: CommentReportDefinition = {
       name: "Details:",
       value: [
         `Comment: ||${comment?.body}||`,
-        `Permalink: [${permalink}](https://reddit.com${permalink})`,
-        `Author: [${authorName}](https://reddit.com/u/${authorName})`,
+        createPermalinkLink(permalink, `Permalink`),
+        createUserLink(authorName),
         `Created ${getItemDateString(submission)}`,
         `Score: **${score}** [${comment?.upvotes} up | ${comment?.downvotes} down]`,
         `Total Reports: ${submission?.numReports || 0}`,
