@@ -15,20 +15,20 @@ Devvit.configure({
 });
 
 /**
- * Dynamically register all triggers
+ * Dynamically register triggers
  */
 triggers.forEach(trigger => {
   Devvit.addTrigger(trigger);
 });
 
 /**
- * Dynamically register all menu items
+ * Dynamically register menu items
  */
 menuItems.forEach(menuItem => {
   Devvit.addMenuItem(menuItem);
 });
 
-// Add settings to the app
+// Add app settings
 Devvit.addSettings(Settings);
 
 export default Devvit;

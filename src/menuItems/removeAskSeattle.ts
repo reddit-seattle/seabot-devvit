@@ -17,7 +17,7 @@ const RemoveAskSeattle: MenuItem = {
       await removeWithReason({
         targetId,
         context,
-        ruleSearchTerms: ["askseattle", "recommendations", "rule 5"],
+        ruleSearchTerms: ["askseattle", "rule 5"],
         modNote: "Removed via AskSeattle macro - Rule 5 violation",
         isPost: true
       });
