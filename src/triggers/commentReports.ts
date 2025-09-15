@@ -1,6 +1,7 @@
 import { Comment, CommentReportDefinition } from "@devvit/public-api";
 import { COMMENT_REPORT_WEBHOOK } from "../settings.js";
-import { getItemDateString, SendContentToWebhook } from "../utils.js";
+import { getItemDateString } from "../utils/parsers.js";
+import { SendContentToWebhook } from "../utils/webhooks.js";
 
 const LogCommentDefinition: CommentReportDefinition = {
   event: "CommentReport",

@@ -1,11 +1,7 @@
 import { Devvit } from "@devvit/public-api";
+import { menuItems } from "./menuItems/index.js";
 import Settings from "./settings.js";
-import LogCommentDefinition from "./triggers/commentReports.js";
-import LogModmailMessage from "./triggers/modmail.js";
-import RestrictPostToFlairedUsers from "./triggers/modMenuItems.js";
-import AddCommentToRestrictedFlairPost from "./triggers/postFlair.js";
-import LogPostReport from "./triggers/postReports.js";
-
+import { triggers } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
   http: {
@@ -19,30 +15,18 @@ Devvit.configure({
 });
 
 /**
- * Logs modmail messages
- * Requires setting the MODMAIL_REPORT_WEBHOOK in the app settings to a Discord webhook URL.
+ * Dynamically register all triggers
  */
-Devvit.addTrigger(LogModmailMessage);
-/**
- * Logs post reports
- * Requires setting the POST_REPORT_WEBHOOK in the app settings to a Discord webhook URL.
- */
-Devvit.addTrigger(LogPostReport);
-/**
- * Logs comment reports
- * Requires setting the COMMENT_REPORT_WEBHOOK in the app settings to a Discord webhook URL.
- */
-Devvit.addTrigger(LogCommentDefinition);
-/**
- * Post flair trigger that adds, stickies, and locks a comment on posts with a specific flair text.
- * Requires setting the RESTRICTED_FLAIR_TEXT in the app settings to the desired flair text.
- */
-Devvit.addTrigger(AddCommentToRestrictedFlairPost);
+triggers.forEach(trigger => {
+  Devvit.addTrigger(trigger);
+});
 
 /**
- * Adds a menu item to automatically apply "restricted flair" to posts.
+ * Dynamically register all menu items
  */
-Devvit.addMenuItem(RestrictPostToFlairedUsers);
+menuItems.forEach(menuItem => {
+  Devvit.addMenuItem(menuItem);
+});
 
 // Add settings to the app
 Devvit.addSettings(Settings);

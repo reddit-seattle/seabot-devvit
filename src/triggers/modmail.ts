@@ -1,10 +1,7 @@
 import { ModMailDefinition } from "@devvit/public-api";
 import { MODMAIL_REPORT_WEBHOOK } from "../settings.js";
-import {
-  parseConversationType,
-  parseParticipantAuthor,
-  SendContentToWebhook,
-} from "../utils.js";
+import { parseConversationType, parseParticipantAuthor } from "../utils/parsers.js";
+import { SendContentToWebhook } from "../utils/webhooks.js";
 
 const LogModmailMessage: ModMailDefinition = {
   event: "ModMail",

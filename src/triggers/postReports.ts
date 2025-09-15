@@ -1,6 +1,7 @@
 import { PostReportDefinition } from "@devvit/public-api";
 import { POST_REPORT_WEBHOOK } from "../settings.js";
-import { getItemDateString, SendContentToWebhook } from "../utils.js";
+import { getItemDateString } from "../utils/parsers.js";
+import { SendContentToWebhook } from "../utils/webhooks.js";
 
 const LogPostReport: PostReportDefinition = {
   event: "PostReport",
