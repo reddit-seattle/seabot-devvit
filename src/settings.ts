@@ -1,5 +1,4 @@
 import { SettingScope, SettingsFormField } from "@devvit/public-api";
-import { validateURL } from "./utils.js";
 
 export const RESTRICTED_FLAIR_TEXT = "Market Traffic Only";
 export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - New comments by users without an equipped r/Seattle flair will be automatically removed.
@@ -32,7 +31,6 @@ export const generateDiscordWebhookSetting = (name: string, label: string) => {
     name: name,
     label: label,
     scope: SettingScope.Installation,
-    onValidate: validateURL,
   } as SettingsFormField;
 };
 
