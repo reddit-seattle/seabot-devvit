@@ -12,19 +12,21 @@ const RestrictPostToFlairedUsers: MenuItem = {
       console.error("Menu action has no target.");
       return;
     }
-    // Check if the post already has the restricted flair
-    const post = await context.reddit.getPostById(targetId);
-    console.log(
-      "Checking post for existing restricted flair:",
-      `https://reddit.com${post.permalink}`
-    );
-    if (post?.flair?.text === RESTRICTED_FLAIR_TEXT) {
-      const message = `This post is already restricted to flaired users.`;
-      console.log(message);
-      context.ui.showToast(message);
-      return;
-    }
+    
     try {
+      // Check if the post already has the restricted flair
+      const post = await context.reddit.getPostById(targetId);
+      console.log(
+        "Checking post for existing restricted flair:",
+        `https://reddit.com${post.permalink}`
+      );
+      if (post?.flair?.text === RESTRICTED_FLAIR_TEXT) {
+        const message = `This post is already restricted to flaired users.`;
+        console.log(message);
+        context.ui.showToast(message);
+        return;
+      }
+
       // Update the post flair to the restricted flair text
       await context.reddit.setPostFlair({
         postId: targetId,
