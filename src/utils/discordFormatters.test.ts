@@ -81,6 +81,20 @@ describe('discordFormatters', () => {
             ]);
         });
 
+        it('should handle user with no createdAt date and no submission', () => {
+            const userInfo: UserInfo = {
+                authorName: 'testuser'
+                // No createdAt property
+            };
+
+            const result = formatUserInfo(userInfo);
+
+            expect(result).toEqual([
+                '[u/testuser](https://reddit.com/user/testuser)'
+                // No date line because createdAt is undefined
+            ]);
+        });
+
         it('should include karma information when provided', () => {
             const userInfo: UserInfo = {
                 authorName: 'testuser',
@@ -107,6 +121,49 @@ describe('discordFormatters', () => {
             // Should not include karma line if no karma data available
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)'
+            ]);
+        });
+
+        it('should handle submission without createdAt date', () => {
+            const userInfo: UserInfo = {
+                authorName: 'testuser'
+            };
+            const submission = {} as Comment; // No createdAt
+
+            const result = formatUserInfo(userInfo, submission);
+
+            expect(result).toEqual([
+                '[u/testuser](https://reddit.com/user/testuser)'
+            ]);
+        });
+
+        it('should include only link karma when comment karma is 0', () => {
+            const userInfo: UserInfo = {
+                authorName: 'testuser',
+                linkKarma: 100,
+                commentKarma: 0
+            };
+
+            const result = formatUserInfo(userInfo);
+
+            expect(result).toEqual([
+                '[u/testuser](https://reddit.com/user/testuser)',
+                'Karma: **100** link, **0** comment'
+            ]);
+        });
+
+        it('should include only comment karma when link karma is 0', () => {
+            const userInfo: UserInfo = {
+                authorName: 'testuser',
+                linkKarma: 0,
+                commentKarma: 200
+            };
+
+            const result = formatUserInfo(userInfo);
+
+            expect(result).toEqual([
+                '[u/testuser](https://reddit.com/user/testuser)',
+                'Karma: **0** link, **200** comment'
             ]);
         });
 
@@ -211,6 +268,38 @@ describe('discordFormatters', () => {
                 'Total Reports: **2**'
             ]);
         });
+
+        it('should not include crowd control when false', () => {
+            const scoreInfo: ScoreInfo = {
+                score: 10,
+                upvotes: 12,
+                downvotes: 2,
+                numReports: 0,
+                collapsedBecauseCrowdControl: false
+            };
+
+            const result = formatScoreInfo(scoreInfo);
+
+            expect(result).toEqual([
+                '12 <:upvote:607100359328006166> 2 <:downvote:607100771028172820> [**10**]',
+                'Total Reports: **0**'
+            ]);
+        });
+
+        it('should handle missing numReports', () => {
+            const scoreInfo: ScoreInfo = {
+                score: 25,
+                upvotes: 30,
+                downvotes: 5
+            };
+
+            const result = formatScoreInfo(scoreInfo);
+
+            expect(result).toEqual([
+                '30 <:upvote:607100359328006166> 5 <:downvote:607100771028172820> [**25**]',
+                'Total Reports: **0**'
+            ]);
+        });
     });
 
     describe('formatCommentContent', () => {
@@ -253,6 +342,27 @@ describe('discordFormatters', () => {
             const result = formatCommentContent(commentInfo);
 
             expect(result).toBe('```\n' + 'a'.repeat(497) + '...\n```');
+        });
+
+        it('should handle null body', () => {
+            const commentInfo: CommentInfo = {
+                body: null as any
+            };
+
+            const result = formatCommentContent(commentInfo);
+
+            expect(result).toBe('');
+        });
+
+        it('should not truncate comment when exactly at max length', () => {
+            const commentInfo: CommentInfo = {
+                body: 'a'.repeat(100),
+                maxLength: 100
+            };
+
+            const result = formatCommentContent(commentInfo);
+
+            expect(result).toBe('```\n' + 'a'.repeat(100) + '\n```');
         });
     });
 

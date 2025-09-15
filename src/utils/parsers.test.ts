@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { parseParticipantAuthor, getItemDateString } from '../utils/parsers.js';
+import { parseParticipantAuthor, getItemDateString, parseConversationType } from '../utils/parsers.js';
 import type { Participant, Comment, Post } from '@devvit/public-api';
 
 // Mock the reddithelpers module
@@ -138,5 +138,37 @@ describe('getItemDateString', () => {
 
         const result = getItemDateString(mockItem);
         expect(result).toBe('<t:NaN:R>');
+    });
+});
+
+describe('parseConversationType', () => {
+    it('should parse internal modmail type', () => {
+        const result = parseConversationType('internal');
+        expect(result).toBe('Mod Discussion');
+    });
+
+    it('should parse user modmail type', () => {
+        const result = parseConversationType('sr_user');
+        expect(result).toBe('User Modmail');
+    });
+
+    it('should parse subreddit modmail type', () => {
+        const result = parseConversationType('sr_sr');
+        expect(result).toBe('Subreddit Modmail');
+    });
+
+    it('should handle unknown modmail type', () => {
+        const result = parseConversationType('unknown_type');
+        expect(result).toBe('Unknown');
+    });
+
+    it('should handle undefined type', () => {
+        const result = parseConversationType(undefined);
+        expect(result).toBe('Unknown');
+    });
+
+    it('should handle empty string type', () => {
+        const result = parseConversationType('');
+        expect(result).toBe('Unknown');
     });
 });
