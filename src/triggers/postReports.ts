@@ -1,8 +1,25 @@
 import { PostReportDefinition } from "@devvit/public-api";
-import { POST_REPORT_WEBHOOK } from "../settings.js";
-import { getItemDateString } from "../utils/parsers.js";
+import {
+  POST_REPORT_WEBHOOK,
+  EMOJI_POST,
+  EMOJI_STATS,
+  EMOJI_WARNING,
+  EMOJI_MEGAPHONE,
+  EMOJI_DIAMOND_ORANGE,
+  EMOJI_DIAMOND_BLUE
+} from "../settings.js";
 import { SendContentToWebhook } from "../utils/webhooks.js";
-import { createPermalinkLink, createUserLink } from "../utils/reddithelpers.js";
+import { createPermalinkLink } from "../utils/reddithelpers.js";
+import {
+  formatUserInfo,
+  formatScoreInfo,
+  formatReportReasons,
+  createDiscordField,
+  createEmbedFooter,
+  type UserInfo,
+  type ScoreInfo,
+  type PostInfo
+} from "../utils/discordFormatters.js";
 
 const LogPostReport: PostReportDefinition = {
   event: "PostReport",
@@ -32,54 +49,77 @@ const LogPostReport: PostReportDefinition = {
       return; // don't log ignored reports
     }
 
-    const title = `New post reported`;
-    let truncatedTitle =
-      postTitle.length > 100 ? `${postTitle.slice(0, 97)}...` : postTitle;
-    let desc = [`${truncatedTitle}`, `Reason: ${reason}`].join("\n");
-    const fields: Array<{ name: string; value: string }> = [
-      {
-        name: "Details:",
-        value: [
-          createPermalinkLink(permalink, `Permalink`),
-          createUserLink(authorName),
-          `Created ${getItemDateString(submission)}`,
-          `Score: **${score}** [${post?.upvotes} up | ${post?.downvotes} down]`,
-          `Comments: ${submission.numberOfComments}`,
-          `Total Reports: ${post?.numReports || 0}`,
-        ].join("\n"),
-      },
-    ];
-    // mod reports
-    const modReports = modReportReasons.length
-      ? modReportReasons.map((str) => `- ${str}`).join("\n")
-      : undefined;
+    const title = `${EMOJI_POST} New post reported`;
+    const postInfo: PostInfo = {
+      title: postTitle,
+      permalink: createPermalinkLink(permalink, postTitle)
+    };
+    const desc = `**Post:** ${postInfo.permalink}\n**Reason:** ${reason}`;
 
-    const userReports = userReportReasons.length
-      ? userReportReasons.map((str) => `- ${str}`).join("\n")
-      : undefined;
+    const fields: Array<{ name: string; value: string }> = [];
 
-    if (modReports) {
-      fields.push({
-        name: "Mod Reports",
-        value: modReports,
-      });
+    // Get author information for karma stats
+    const author = await ctx.reddit.getUserById(submission.authorId ?? "");
+    const userInfo: UserInfo = {
+      authorName,
+      linkKarma: author?.linkKarma,
+      commentKarma: author?.commentKarma,
+      createdAt: author?.createdAt,
+    };
+
+    // User field
+    fields.push(createDiscordField(
+      "User",
+      formatUserInfo(userInfo, submission)
+    ));
+
+    // Post statistics field (includes consolidated karma)
+    const scoreInfo: ScoreInfo = {
+      score,
+      upvotes: post?.upvotes,
+      downvotes: post?.downvotes,
+      numReports: post?.numReports,
+    };
+
+    fields.push(createDiscordField(
+      `${EMOJI_STATS} Statistics`,
+      formatScoreInfo(scoreInfo, submission.numberOfComments)
+    ));
+
+    // Report reasons fields
+    if (modReportReasons.length > 0) {
+      fields.push(createDiscordField(
+        `${EMOJI_WARNING} Mod Reports`,
+        formatReportReasons(modReportReasons, EMOJI_DIAMOND_ORANGE)
+      ));
     }
-    if (userReports) {
-      fields.push({
-        name: "User Reports",
-        value: userReports,
-      });
+
+    if (userReportReasons.length > 0) {
+      fields.push(createDiscordField(
+        `${EMOJI_MEGAPHONE} User Reports`,
+        formatReportReasons(userReportReasons, EMOJI_DIAMOND_BLUE)
+      ));
     }
+
+    // If no categorized reports but we have a direct reason, show it as a user report
+    if (modReportReasons.length === 0 && userReportReasons.length === 0 && reason) {
+      fields.push(createDiscordField(
+        `${EMOJI_MEGAPHONE} User Reports`,
+        formatReportReasons([reason], EMOJI_DIAMOND_BLUE)
+      ));
+    }
+
+    const footerData = createEmbedFooter();
     // https://discord.com/developers/docs/resources/webhook#execute-webhook-jsonform-params
+    const embed = {
+      title,
+      type: "rich",
+      description: desc,
+      fields,
+      ...footerData,
+    };
     const payload = {
-      embeds: [
-        {
-          title,
-          type: "rich",
-          description: desc,
-          fields,
-        },
-      ],
+      embeds: [embed],
     };
     await SendContentToWebhook(discordWebhookUrl, payload);
   },

@@ -29,7 +29,9 @@ export function createUserLink(username: string): string {
  * @returns A markdown link to the Reddit permalink
  */
 export function createPermalinkLink(permalink: string, linkText: string): string {
-    return createMarkdownLink(linkText, `https://reddit.com${permalink}`);
+    // Ensure permalink starts with /
+    const normalizedPermalink = permalink.startsWith('/') ? permalink : `/${permalink}`;
+    return createMarkdownLink(linkText, `https://reddit.com${normalizedPermalink}`);
 }
 
 /**
