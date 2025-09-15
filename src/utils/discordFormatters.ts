@@ -6,66 +6,50 @@ import { createUserLink } from "./reddithelpers.js";
 import { getItemDateString } from "./parsers.js";
 import { Comment, Post, User } from "@devvit/public-api";
 
-export interface UserInfo {
-    authorName?: string;
-    authorId?: string;
-    linkKarma?: number;
-    commentKarma?: number;
-    createdAt?: Date;
-}
-
-export interface ScoreInfo {
-    score: number;
+// Extended types to include undocumented vote properties that exist at runtime
+export type PostWithVotes = Post & {
     upvotes?: number;
     downvotes?: number;
-    numReports?: number;
-    collapsedBecauseCrowdControl?: boolean;
-}
+};
 
-export interface PostInfo {
-    title: string;
-    permalink: string;
-    numberOfComments?: number;
-}
+export type CommentWithVotes = Comment & {
+    upvotes?: number;
+    downvotes?: number;
+};
 
+// Interface for comment content formatting
 export interface CommentInfo {
     body?: string;
-    maxLength?: number;
 }
 
 /**
  * Creates a Discord timestamp string for user creation date
  */
-function getUserDateString(user: UserInfo): string | undefined {
+function getUserDateString(user: User): string | undefined {
     if (!user.createdAt) return undefined;
     return `<t:${Math.floor(user.createdAt.getTime() / 1000)}:R>`;
 }
 
 /**
- * Creates a formatted user info section (simplified, no emojis)
+ * Creates a formatted user info section
  */
-export function formatUserInfo(userInfo: UserInfo, submission?: Post | Comment): string[] {
+export function formatUserInfo(user: User): string[] {
     const lines: string[] = [
-        createUserLink(userInfo.authorName || 'unknown'),
+        createUserLink(user.username || 'unknown'),
     ];
 
-    if (submission) {
-        const dateString = getItemDateString(submission);
-        if (dateString) {
-            lines.push(`Created: ${dateString}`);
-        }
-    } else if (userInfo.createdAt) {
-        // Use user creation date if no submission provided
-        const userDateString = getUserDateString(userInfo);
+    // Add user account creation date if available
+    if (user.createdAt) {
+        const userDateString = getUserDateString(user);
         if (userDateString) {
-            lines.push(`Account created: ${userDateString}`);
+            lines.push(`Created: ${userDateString}`);
         }
     }
 
     // Add karma information if available
-    if (userInfo.linkKarma !== undefined || userInfo.commentKarma !== undefined) {
-        const linkKarma = userInfo.linkKarma || 0;
-        const commentKarma = userInfo.commentKarma || 0;
+    if (user.linkKarma !== undefined || user.commentKarma !== undefined) {
+        const linkKarma = user.linkKarma || 0;
+        const commentKarma = user.commentKarma || 0;
         lines.push(`Karma: **${linkKarma}** link, **${commentKarma}** comment`);
     }
 
@@ -73,20 +57,36 @@ export function formatUserInfo(userInfo: UserInfo, submission?: Post | Comment):
 }
 
 /**
- * Creates a formatted score/statistics section (no emoji prefixes except for votes)
+ * Creates a formatted score/statistics section
  */
-export function formatScoreInfo(scoreInfo: ScoreInfo, includeComments?: number): string[] {
-    const lines: string[] = [
-        `${scoreInfo.upvotes || 0} ${EMOJI_UPVOTE} ${scoreInfo.downvotes || 0} ${EMOJI_DOWNVOTE} [**${scoreInfo.score}**]`,
-    ];
+export function formatScoreInfo(submission: (PostWithVotes | CommentWithVotes)): string[] {
 
-    if (includeComments !== undefined) {
-        lines.push(`Comments: **${includeComments}**`);
+    const lines: string[] = [];
+
+    // Check if upvotes/downvotes are available, otherwise fall back to score only
+    if (submission.upvotes !== undefined || submission.downvotes !== undefined) {
+        lines.push(`${submission.upvotes ?? 0} ${EMOJI_UPVOTE} ${submission.downvotes ?? 0} ${EMOJI_DOWNVOTE} [**${submission.score}**]`);
+    } else {
+        // Fallback when vote breakdown isn't available
+        lines.push(`Score: **${submission.score}**`);
     }
 
-    lines.push(`Total Reports: **${scoreInfo.numReports || 0}**`);
+    // Add submission creation date
+    const dateString = getItemDateString(submission);
+    if (dateString) {
+        lines.push(`Created: ${dateString}`);
+    }
 
-    if (scoreInfo.collapsedBecauseCrowdControl) {
+    // Add comment count if it's a post
+    if ('numberOfComments' in submission && submission.numberOfComments !== undefined) {
+        lines.push(`Comments: **${submission.numberOfComments}**`);
+    }
+
+    // Get report count (property name differs between posts and comments)
+    const reportCount = 'numberOfReports' in submission ? submission.numberOfReports : submission.numReports;
+    lines.push(`Total Reports: **${reportCount || 0}**`);
+
+    if ('collapsedBecauseCrowdControl' in submission && submission.collapsedBecauseCrowdControl) {
         lines.push(`Crowd Control: **Yes**`);
     }
 
@@ -96,15 +96,14 @@ export function formatScoreInfo(scoreInfo: ScoreInfo, includeComments?: number):
 /**
  * Creates a formatted comment content section with code blocks
  */
-export function formatCommentContent(commentInfo: CommentInfo): string {
-    if (!commentInfo.body) {
+export function formatCommentContent(comment: { body?: string }, maxLength: number = 500): string {
+    if (!comment.body) {
         return '';
     }
 
-    const maxLength = commentInfo.maxLength || 500;
-    const commentBody = commentInfo.body.length > maxLength
-        ? `${commentInfo.body.slice(0, maxLength - 3)}...`
-        : commentInfo.body;
+    const commentBody = comment.body.length > maxLength
+        ? `${comment.body.slice(0, maxLength - 3)}...`
+        : comment.body;
 
     return `\`\`\`\n${commentBody}\n\`\`\``;
 }
@@ -127,21 +126,23 @@ export function createDiscordField(name: string, value: string | string[]): { na
 }
 
 /**
- * Creates a Discord embed footer with timestamp
+ * Creates a Discord embed footer with Seattle timezone timestamp
  */
-export function createEmbedFooter(): { footer: { text: string }; timestamp: string } {
+export function createEmbedFooter(): { footer: { text: string } } {
     const now = new Date();
+    // Convert to Seattle timezone (Pacific Time)
+    const seattleTime = now.toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
     return {
         footer: {
-            text: now.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            })
-        },
-        timestamp: now.toISOString()
+            text: `Report received at ${seattleTime} PT`
+        }
     };
 }
