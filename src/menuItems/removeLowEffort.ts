@@ -18,7 +18,6 @@ const RemoveLowEffort: MenuItem = {
         targetId,
         context,
         ruleSearchTerms: ["low-effort", "low effort", "rule 4"],
-        modNote: "Removed via low-effort content macro",
         isPost: true
       });
     } catch (error) {

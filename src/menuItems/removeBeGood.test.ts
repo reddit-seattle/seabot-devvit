@@ -52,7 +52,6 @@ describe('RemoveBeGood', () => {
       targetId: 'comment123',
       context: mockContext,
       ruleSearchTerms: ["be good", "rule 1"],
-      modNote: "Removed via Be Good macro",
       isPost: false
     });
   });
@@ -105,6 +104,5 @@ describe('RemoveBeGood', () => {
     const callArgs = (removeWithReason as any).mock.calls[0][0];
     expect(callArgs.ruleSearchTerms).toEqual(["be good", "rule 1"]);
     expect(callArgs.isPost).toBe(false);
-    expect(callArgs.modNote).toBe("Removed via Be Good macro");
   });
 });

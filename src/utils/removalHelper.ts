@@ -7,8 +7,6 @@ export interface RemovalOptions {
     context: Context;
     /** Rule search terms to find the removal reason */
     ruleSearchTerms: string[];
-    /** Optional custom mod note for removal tracking */
-    modNote?: string;
     /** Whether this is a post (true) or comment (false) */
     isPost: boolean;
     /** Optional footer text to append to the removal comment */
@@ -19,7 +17,7 @@ export interface RemovalOptions {
  * Generic helper function to remove posts or comments with official removal reasons
  */
 export async function removeWithReason(options: RemovalOptions): Promise<void> {
-    const { targetId, context, ruleSearchTerms, modNote, isPost, footer } = options;
+    const { targetId, context, ruleSearchTerms, isPost, footer } = options;
     const itemType = isPost ? 'post' : 'comment';
 
     // Get the target item
@@ -60,13 +58,14 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
 
     // Remove the target
     await context.reddit.remove(targetId, false); // false = not spam
+    const mod = await context.reddit.getCurrentUsername();
 
     // Add removal note
     try {
         await context.reddit.addRemovalNote({
             itemIds: [targetId],
             reasonId: matchingReason.id,
-            modNote: modNote || `Removed via macro - ${matchingReason.title}`
+            modNote: `Removed by ${mod} via seabot`
         });
     } catch (noteError) {
         console.warn("Could not add removal note:", noteError);
