@@ -87,7 +87,7 @@ const LogCommentDefinition: CommentReportDefinition = {
     // Comment statistics field
     fields.push(createDiscordField(
       `${EMOJI_STATS} Statistics`,
-      formatScoreInfo(submission)
+      formatScoreInfo(comment || submission)
     ));
 
     // Mod reports field

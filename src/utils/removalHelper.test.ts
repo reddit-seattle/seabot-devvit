@@ -91,7 +91,7 @@ describe('removeWithReason', () => {
             });
             expect(mockComment.distinguish).toHaveBeenCalledWith(true);
             expect(mockComment.lock).toHaveBeenCalled();
-            expect(mockPost.lock).toHaveBeenCalled();
+            expect(mockPost.lock).not.toHaveBeenCalled();
             expect(mockContext.ui.showToast).toHaveBeenCalledWith('Post removed for Low Effort Content');
         });
 
@@ -338,7 +338,7 @@ describe('removeWithReason', () => {
             await expect(removeWithReason(baseOptions)).resolves.not.toThrow();
 
             expect(mockContext.reddit.remove).toHaveBeenCalled();
-            expect(mockPost.lock).toHaveBeenCalled();
+            expect(mockPost.lock).not.toHaveBeenCalled();
             expect(mockContext.ui.showToast).toHaveBeenCalledWith('Post removed for Low Effort Content');
         });
 

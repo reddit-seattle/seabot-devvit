@@ -1,8 +1,10 @@
+import { Context } from "@devvit/public-api";
+
 export interface RemovalOptions {
     /** Target ID (post or comment) */
     targetId: string;
     /** Context from the menu item */
-    context: any;
+    context: Context;
     /** Rule search terms to find the removal reason */
     ruleSearchTerms: string[];
     /** Optional custom mod note for removal tracking */
@@ -81,7 +83,7 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
     const comment = await context.reddit.submitComment({
         id: targetId,
         text: commentText,
-        runAs: "APP",
+        runAs: "APP"
     });
 
     // Distinguish, sticky, lock response comment
@@ -89,9 +91,6 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
         await comment.distinguish(true); // true = sticky
         await comment.lock();
     }
-
-    // Lock the target
-    await target.lock();
 
     // Show success message
     context.ui.showToast(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed for ${matchingReason.title}`);

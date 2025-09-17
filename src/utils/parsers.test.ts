@@ -99,10 +99,28 @@ describe('parseParticipantAuthor', () => {
 });
 
 describe('getItemDateString', () => {
-    it('should format post creation date as Discord timestamp', () => {
+    it('should format post creation date as Discord timestamp when given a Date object', () => {
         const mockPost = {
             createdAt: new Date('2023-01-15T10:30:00Z')
         } as Post;
+
+        const result = getItemDateString(mockPost);
+        expect(result).toBe('<t:1673778600:R>');
+    });
+
+    it('should format post creation date when given a timestamp string', () => {
+        const mockPost = {
+            createdAt: '2023-01-15T10:30:00Z'
+        } as unknown as Post;
+
+        const result = getItemDateString(mockPost);
+        expect(result).toBe('<t:1673778600:R>');
+    });
+
+    it('should format post creation date when given a timestamp number', () => {
+        const mockPost = {
+            createdAt: 1673778600000 // 2023-01-15T10:30:00Z in milliseconds
+        } as unknown as Post;
 
         const result = getItemDateString(mockPost);
         expect(result).toBe('<t:1673778600:R>');
@@ -126,6 +144,15 @@ describe('getItemDateString', () => {
         const mockItem = {
             createdAt: undefined
         } as any;
+
+        const result = getItemDateString(mockItem);
+        expect(result).toBeUndefined();
+    });
+
+    it('should handle invalid date string', () => {
+        const mockItem = {
+            createdAt: 'not a date'
+        } as unknown as Post;
 
         const result = getItemDateString(mockItem);
         expect(result).toBeUndefined();

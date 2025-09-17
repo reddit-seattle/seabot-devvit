@@ -4,18 +4,7 @@ import {
 } from "../settings.js";
 import { createUserLink } from "./reddithelpers.js";
 import { getItemDateString } from "./parsers.js";
-import { Comment, Post, User } from "@devvit/public-api";
-
-// Extended types to include undocumented vote properties that exist at runtime
-export type PostWithVotes = Post & {
-    upvotes?: number;
-    downvotes?: number;
-};
-
-export type CommentWithVotes = Comment & {
-    upvotes?: number;
-    downvotes?: number;
-};
+import { User } from "@devvit/public-api";
 
 // Interface for comment content formatting
 export interface CommentInfo {
@@ -42,7 +31,7 @@ export function formatUserInfo(user: User): string[] {
     if (user.createdAt) {
         const userDateString = getUserDateString(user);
         if (userDateString) {
-            lines.push(`Created: ${userDateString}`);
+            lines.push(`Account Created: ${userDateString}`);
         }
     }
 
@@ -59,19 +48,18 @@ export function formatUserInfo(user: User): string[] {
 /**
  * Creates a formatted score/statistics section
  */
-export function formatScoreInfo(submission: (PostWithVotes | CommentWithVotes)): string[] {
-
+export function formatScoreInfo(submission: any): string[] {
     const lines: string[] = [];
 
-    // Check if upvotes/downvotes are available, otherwise fall back to score only
-    if (submission.upvotes !== undefined || submission.downvotes !== undefined) {
-        lines.push(`${submission.upvotes ?? 0} ${EMOJI_UPVOTE} ${submission.downvotes ?? 0} ${EMOJI_DOWNVOTE} [**${submission.score}**]`);
+    // Show detailed vote information if available, otherwise just show the score
+    const score = submission.score ?? 0;
+    if (submission.upvotes !== undefined && submission.downvotes !== undefined) {
+        lines.push(`${submission.upvotes} ${EMOJI_UPVOTE} ${submission.downvotes} ${EMOJI_DOWNVOTE} [**${score}**]`);
     } else {
-        // Fallback when vote breakdown isn't available
-        lines.push(`Score: **${submission.score}**`);
+        lines.push(`Score: **${score}**`);
     }
 
-    // Add submission creation date
+    // Add creation date
     const dateString = getItemDateString(submission);
     if (dateString) {
         lines.push(`Created: ${dateString}`);
@@ -142,7 +130,7 @@ export function createEmbedFooter(): { footer: { text: string } } {
     });
     return {
         footer: {
-            text: `Report received at ${seattleTime} PT`
+            text: `${seattleTime}`
         }
     };
 }
