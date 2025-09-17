@@ -53,7 +53,6 @@ describe('RemoveLowEffort Menu Item', () => {
                 targetId: 'post123',
                 context: mockContext,
                 ruleSearchTerms: ['low-effort', 'low effort', 'rule 4'],
-                modNote: 'Removed via low-effort content macro',
                 isPost: true,
             });
         });
@@ -68,7 +67,6 @@ describe('RemoveLowEffort Menu Item', () => {
                 targetId: 'custom-post-id',
                 context: mockContext,
                 ruleSearchTerms: ['low-effort', 'low effort', 'rule 4'],
-                modNote: 'Removed via low-effort content macro',
                 isPost: true,
             });
             expect(removeWithReason).toHaveBeenCalledTimes(1);
@@ -174,9 +172,6 @@ describe('RemoveLowEffort Menu Item', () => {
             (removeWithReason as any).mockResolvedValue(undefined);
 
             await RemoveLowEffort.onPress(mockEvent, mockContext);
-
-            const callArgs = (removeWithReason as any).mock.calls[0][0];
-            expect(callArgs.modNote).toBe('Removed via low-effort content macro');
         });
     });
 

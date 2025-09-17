@@ -82,7 +82,6 @@ describe('RemoveAskSeattle Menu Item', () => {
                 targetId: 'post123',
                 context: mockContext,
                 ruleSearchTerms: ['askseattle', 'rule 5'],
-                modNote: 'Removed via AskSeattle macro - Rule 5 violation',
                 isPost: true,
                 footer: '[Click here to resubmit your post to r/AskSeattle](https://old.reddit.com/r/AskSeattle/submit?title=Looking%20for%20restaurant%20recommendations)',
             });
@@ -259,7 +258,6 @@ describe('RemoveAskSeattle Menu Item', () => {
                 targetId: 'post123',
                 context: mockContext,
                 ruleSearchTerms: ['askseattle', 'rule 5'],
-                modNote: 'Removed via AskSeattle macro - Rule 5 violation',
                 isPost: true,
                 footer: '[Mock resubmission link]',
             });

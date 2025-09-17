@@ -1,12 +1,12 @@
+import { Context } from "@devvit/public-api";
+
 export interface RemovalOptions {
     /** Target ID (post or comment) */
     targetId: string;
     /** Context from the menu item */
-    context: any;
+    context: Context;
     /** Rule search terms to find the removal reason */
     ruleSearchTerms: string[];
-    /** Optional custom mod note for removal tracking */
-    modNote?: string;
     /** Whether this is a post (true) or comment (false) */
     isPost: boolean;
     /** Optional footer text to append to the removal comment */
@@ -17,7 +17,7 @@ export interface RemovalOptions {
  * Generic helper function to remove posts or comments with official removal reasons
  */
 export async function removeWithReason(options: RemovalOptions): Promise<void> {
-    const { targetId, context, ruleSearchTerms, modNote, isPost, footer } = options;
+    const { targetId, context, ruleSearchTerms, isPost, footer } = options;
     const itemType = isPost ? 'post' : 'comment';
 
     // Get the target item
@@ -58,13 +58,14 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
 
     // Remove the target
     await context.reddit.remove(targetId, false); // false = not spam
+    const mod = await context.reddit.getCurrentUsername();
 
     // Add removal note
     try {
         await context.reddit.addRemovalNote({
             itemIds: [targetId],
             reasonId: matchingReason.id,
-            modNote: modNote || `Removed via macro - ${matchingReason.title}`
+            modNote: `Removed by ${mod} via seabot`
         });
     } catch (noteError) {
         console.warn("Could not add removal note:", noteError);
@@ -81,7 +82,7 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
     const comment = await context.reddit.submitComment({
         id: targetId,
         text: commentText,
-        runAs: "APP",
+        runAs: "APP"
     });
 
     // Distinguish, sticky, lock response comment
@@ -89,9 +90,6 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
         await comment.distinguish(true); // true = sticky
         await comment.lock();
     }
-
-    // Lock the target
-    await target.lock();
 
     // Show success message
     context.ui.showToast(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed for ${matchingReason.title}`);

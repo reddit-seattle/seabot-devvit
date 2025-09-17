@@ -25,7 +25,6 @@ const RemoveAskSeattle: MenuItem = {
         targetId,
         context,
         ruleSearchTerms: ["askseattle", "rule 5"],
-        modNote: "Removed via AskSeattle macro - Rule 5 violation",
         isPost: true,
         footer
       });

@@ -10,6 +10,7 @@ const createMockContext = () => ({
         remove: vi.fn(),
         addRemovalNote: vi.fn(),
         submitComment: vi.fn(),
+        getCurrentUsername: vi.fn().mockResolvedValue('testmod'),
     },
     ui: {
         showToast: vi.fn(),
@@ -82,7 +83,7 @@ describe('removeWithReason', () => {
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
                 reasonId: 'reason1',
-                modNote: 'Removed via macro - Low Effort Content',
+                modNote: 'Removed by testmod via seabot',
             });
             expect(mockContext.reddit.submitComment).toHaveBeenCalledWith({
                 id: 'post123',
@@ -91,7 +92,7 @@ describe('removeWithReason', () => {
             });
             expect(mockComment.distinguish).toHaveBeenCalledWith(true);
             expect(mockComment.lock).toHaveBeenCalled();
-            expect(mockPost.lock).toHaveBeenCalled();
+            expect(mockPost.lock).not.toHaveBeenCalled();
             expect(mockContext.ui.showToast).toHaveBeenCalledWith('Post removed for Low Effort Content');
         });
 
@@ -106,7 +107,6 @@ describe('removeWithReason', () => {
 
             const optionsWithNote = {
                 ...baseOptions,
-                modNote: 'Custom mod note for testing',
             };
 
             await removeWithReason(optionsWithNote);
@@ -114,7 +114,7 @@ describe('removeWithReason', () => {
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
                 reasonId: 'reason1',
-                modNote: 'Custom mod note for testing',
+                modNote: 'Removed by testmod via seabot',
             });
         });
 
@@ -186,7 +186,7 @@ describe('removeWithReason', () => {
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
                 reasonId: 'reason1',
-                modNote: 'Removed via macro - Low Effort Content',
+                modNote: 'Removed by testmod via seabot',
             });
         });
 
@@ -209,7 +209,7 @@ describe('removeWithReason', () => {
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
                 reasonId: 'reason2',
-                modNote: 'Removed via macro - Rule 5: Use AskSeattle',
+                modNote: 'Removed by testmod via seabot',
             });
         });
 
@@ -235,7 +235,7 @@ describe('removeWithReason', () => {
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
                 reasonId: 'reason1',
-                modNote: 'Removed via macro - Rule 1: Test Rule',
+                modNote: 'Removed by testmod via seabot',
             });
         });
     });
@@ -308,7 +308,7 @@ describe('removeWithReason', () => {
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
                 reasonId: 'reason2',
-                modNote: 'Removed via macro - Low Effort Content',
+                modNote: 'Removed by testmod via seabot',
             });
         });
     });
@@ -338,7 +338,7 @@ describe('removeWithReason', () => {
             await expect(removeWithReason(baseOptions)).resolves.not.toThrow();
 
             expect(mockContext.reddit.remove).toHaveBeenCalled();
-            expect(mockPost.lock).toHaveBeenCalled();
+            expect(mockPost.lock).not.toHaveBeenCalled();
             expect(mockContext.ui.showToast).toHaveBeenCalledWith('Post removed for Low Effort Content');
         });
 

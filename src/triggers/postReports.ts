@@ -71,7 +71,7 @@ const LogPostReport: PostReportDefinition = {
       // Post statistics field
       fields.push(createDiscordField(
         `${EMOJI_STATS} Statistics`,
-        formatScoreInfo(submission)
+        formatScoreInfo(post || submission)
       ));
 
       // Report reasons fields

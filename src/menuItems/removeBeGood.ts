@@ -18,7 +18,6 @@ const RemoveBeGood: MenuItem = {
                 targetId,
                 context,
                 ruleSearchTerms: ["be good", "rule 1"],
-                modNote: "Removed via Be Good macro",
                 isPost: false
             });
         } catch (error) {

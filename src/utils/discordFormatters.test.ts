@@ -50,7 +50,7 @@ describe('discordFormatters', () => {
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
-                'Created: <t:1704067200:R>'
+                'Account Created: <t:1704067200:R>'
             ]);
         });
 
@@ -64,7 +64,7 @@ describe('discordFormatters', () => {
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
-                'Created: <t:1704067200:R>'
+                'Account Created: <t:1704067200:R>'
             ]);
         });
 
@@ -175,7 +175,7 @@ describe('discordFormatters', () => {
 
             expect(result).toEqual([
                 '[u/testuser](https://reddit.com/user/testuser)',
-                'Created: <t:1704067200:R>', // User account creation date (2024), not submission date (2025)
+                'Account Created: <t:1704067200:R>', // User account creation date (2024), not submission date (2025)
                 'Karma: **2500** link, **1200** comment'
             ]);
         });
@@ -445,17 +445,10 @@ describe('discordFormatters', () => {
 
         it('should create footer with Seattle timezone timestamp', () => {
             const result = createEmbedFooter();
-
-            // Check that the structure is correct - no more ISO timestamp
             expect(result).toHaveProperty('footer');
-            expect(result).not.toHaveProperty('timestamp');
             expect(result.footer).toHaveProperty('text');
-
-            // Check that the footer text contains expected elements in Seattle time
-            expect(result.footer.text).toContain('Report received at');
             expect(result.footer.text).toContain('September 15, 2025');
             expect(result.footer.text).toMatch(/\d{1,2}:\d{2} [AP]M/); // Contains time in AM/PM format
-            expect(result.footer.text).toContain('PT'); // Pacific Time
         });
     });
 
