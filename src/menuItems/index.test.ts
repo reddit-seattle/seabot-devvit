@@ -17,10 +17,10 @@ describe('menuItems index', () => {
 
   it('should include all expected menu items', () => {
     const labels = menuItems.map(item => item.label);
-    expect(labels).toContain('Remove for r/AskSeattle');
-    expect(labels).toContain('Remove for Low-Effort Content');
+    expect(labels).toContain('r/AskSeattle');
+    expect(labels).toContain('Remove: Low-Effort Content');
+    expect(labels).toContain('Remove: Be Good');
     expect(labels).toContain('Require Flair for Comments');
     expect(labels).toContain('Comment Nuke');
-    expect(labels).toContain('Remove for Be Good');
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { removeWithReason, type RemovalOptions } from './removalHelper.js';
+import { removeWithFetchedRemovalReason, type RemovalOptions } from './removalHelper.js';
 
 // Mock the context object and its methods
 const createMockContext = () => ({
@@ -59,8 +59,8 @@ describe('removeWithReason', () => {
         mockContext = createMockContext();
         baseOptions = {
             targetId: 'post123',
-            context: mockContext,
-            ruleSearchTerms: ['low effort'],
+            context: mockContext as any,
+            rulePattern: 'low effort',
             isPost: true,
         };
         vi.clearAllMocks();
@@ -76,7 +76,7 @@ describe('removeWithReason', () => {
             mockContext.reddit.getSubredditRemovalReasons.mockResolvedValue(mockRemovalReasons);
             mockContext.reddit.submitComment.mockResolvedValue(mockComment);
 
-            await removeWithReason(baseOptions);
+            await removeWithFetchedRemovalReason(baseOptions);
 
             expect(mockContext.reddit.getPostById).toHaveBeenCalledWith('post123');
             expect(mockContext.reddit.remove).toHaveBeenCalledWith('post123', false);
@@ -109,7 +109,7 @@ describe('removeWithReason', () => {
                 ...baseOptions,
             };
 
-            await removeWithReason(optionsWithNote);
+            await removeWithFetchedRemovalReason(optionsWithNote);
 
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
@@ -132,7 +132,7 @@ describe('removeWithReason', () => {
                 footer: 'Please resubmit to the correct subreddit.',
             };
 
-            await removeWithReason(optionsWithFooter);
+            await removeWithFetchedRemovalReason(optionsWithFooter);
 
             expect(mockContext.reddit.submitComment).toHaveBeenCalledWith({
                 id: 'post123',
@@ -158,7 +158,7 @@ describe('removeWithReason', () => {
                 isPost: false,
             };
 
-            await removeWithReason(commentOptions);
+            await removeWithFetchedRemovalReason(commentOptions);
 
             expect(mockContext.reddit.getCommentById).toHaveBeenCalledWith('comment123');
             expect(mockContext.reddit.remove).toHaveBeenCalledWith('comment123', false);
@@ -178,10 +178,10 @@ describe('removeWithReason', () => {
 
             const optionsWithCaseSearch = {
                 ...baseOptions,
-                ruleSearchTerms: ['LOW EFFORT'], // uppercase
+                rulePattern: 'LOW EFFORT', // uppercase
             };
 
-            await removeWithReason(optionsWithCaseSearch);
+            await removeWithFetchedRemovalReason(optionsWithCaseSearch);
 
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
@@ -201,10 +201,10 @@ describe('removeWithReason', () => {
 
             const optionsWithMultipleTerms = {
                 ...baseOptions,
-                ruleSearchTerms: ['askseattle', 'rule 5'], // should match second removal reason
+                rulePattern: 'askseattle|rule 5', // regex alternation - should match second removal reason
             };
 
-            await removeWithReason(optionsWithMultipleTerms);
+            await removeWithFetchedRemovalReason(optionsWithMultipleTerms);
 
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
@@ -227,10 +227,10 @@ describe('removeWithReason', () => {
 
             const optionsWithAmbiguousSearch = {
                 ...baseOptions,
-                ruleSearchTerms: ['rule'], // matches both
+                rulePattern: 'rule', // matches both, should use first
             };
 
-            await removeWithReason(optionsWithAmbiguousSearch);
+            await removeWithFetchedRemovalReason(optionsWithAmbiguousSearch);
 
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
                 itemIds: ['post123'],
@@ -246,7 +246,7 @@ describe('removeWithReason', () => {
 
             mockContext.reddit.getPostById.mockResolvedValue(mockPost);
 
-            await removeWithReason(baseOptions);
+            await removeWithFetchedRemovalReason(baseOptions);
 
             expect(mockContext.ui.showToast).toHaveBeenCalledWith('This post has already been removed.');
             expect(mockContext.reddit.remove).not.toHaveBeenCalled();
@@ -262,12 +262,12 @@ describe('removeWithReason', () => {
 
             const optionsWithNoMatch = {
                 ...baseOptions,
-                ruleSearchTerms: ['nonexistent rule'],
+                rulePattern: 'nonexistent rule',
             };
 
-            await removeWithReason(optionsWithNoMatch);
+            await removeWithFetchedRemovalReason(optionsWithNoMatch);
 
-            expect(mockContext.ui.showToast).toHaveBeenCalledWith('Error: Could not find removal reason for: nonexistent rule');
+            expect(mockContext.ui.showToast).toHaveBeenCalledWith('Error: Could not find removal reason matching: nonexistent rule');
             expect(mockContext.reddit.remove).not.toHaveBeenCalled();
             expect(mockContext.reddit.submitComment).not.toHaveBeenCalled();
         });
@@ -283,7 +283,7 @@ describe('removeWithReason', () => {
             mockContext.reddit.submitComment.mockResolvedValue(mockComment);
 
             // Should not throw, just log warning
-            await expect(removeWithReason(baseOptions)).resolves.not.toThrow();
+            await expect(removeWithFetchedRemovalReason(baseOptions)).resolves.not.toThrow();
 
             expect(mockContext.reddit.remove).toHaveBeenCalled();
             expect(mockContext.reddit.submitComment).toHaveBeenCalled();
@@ -302,7 +302,7 @@ describe('removeWithReason', () => {
             mockContext.reddit.getSubredditRemovalReasons.mockResolvedValue(mockRemovalReasons);
             mockContext.reddit.submitComment.mockResolvedValue(mockComment);
 
-            await removeWithReason(baseOptions);
+            await removeWithFetchedRemovalReason(baseOptions);
 
             // Should skip the undefined title and find the valid one
             expect(mockContext.reddit.addRemovalNote).toHaveBeenCalledWith({
@@ -320,9 +320,9 @@ describe('removeWithReason', () => {
             mockContext.reddit.getPostById.mockResolvedValue(mockPost);
             mockContext.reddit.getSubredditRemovalReasons.mockResolvedValue([]);
 
-            await removeWithReason(baseOptions);
+            await removeWithFetchedRemovalReason(baseOptions);
 
-            expect(mockContext.ui.showToast).toHaveBeenCalledWith('Error: Could not find removal reason for: low effort');
+            expect(mockContext.ui.showToast).toHaveBeenCalledWith('Error: Could not find removal reason matching: low effort');
             expect(mockContext.reddit.remove).not.toHaveBeenCalled();
         });
 
@@ -335,28 +335,32 @@ describe('removeWithReason', () => {
             mockContext.reddit.submitComment.mockResolvedValue(null);
 
             // Should not throw when comment is null
-            await expect(removeWithReason(baseOptions)).resolves.not.toThrow();
+            await expect(removeWithFetchedRemovalReason(baseOptions)).resolves.not.toThrow();
 
             expect(mockContext.reddit.remove).toHaveBeenCalled();
             expect(mockPost.lock).not.toHaveBeenCalled();
             expect(mockContext.ui.showToast).toHaveBeenCalledWith('Post removed for Low Effort Content');
         });
 
-        it('should handle empty ruleSearchTerms array', async () => {
+        it('should handle empty rulePattern (matches first reason)', async () => {
             const mockPost = createMockPost();
             const mockRemovalReasons = createMockRemovalReasons();
+            const mockComment = createMockComment();
 
             mockContext.reddit.getPostById.mockResolvedValue(mockPost);
             mockContext.reddit.getSubredditRemovalReasons.mockResolvedValue(mockRemovalReasons);
+            mockContext.reddit.submitComment.mockResolvedValue(mockComment);
 
             const optionsWithEmptyTerms = {
                 ...baseOptions,
-                ruleSearchTerms: [],
+                rulePattern: '', // Empty pattern matches everything, will match first reason
             };
 
-            await removeWithReason(optionsWithEmptyTerms);
+            await removeWithFetchedRemovalReason(optionsWithEmptyTerms);
 
-            expect(mockContext.ui.showToast).toHaveBeenCalledWith('Error: Could not find removal reason for: ');
+            // Empty regex matches any string, so it should match the first removal reason
+            expect(mockContext.reddit.remove).toHaveBeenCalled();
+            expect(mockContext.ui.showToast).toHaveBeenCalledWith('Post removed for Low Effort Content');
         });
     });
 });

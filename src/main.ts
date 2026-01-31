@@ -1,30 +1,37 @@
 import { Devvit } from "@devvit/public-api";
 import { menuItems } from "./menuItems/index.js";
 import Settings from "./settings.js";
-import { triggers } from "./triggers/index.js";
+import {
+  AddCommentToRestrictedFlairPost,
+  LogCommentReports,
+  LogModmailMessage,
+  LogPostReport,
+} from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
   http: {
+    // You can ignore this. These endpoints are not used currently...
     domains: [
-      "https://api-web.nhle.com",  // NHL API
-      "https://api.nhle.com",  // NHL REST API
-      "https://statsapi.mlb.com",  // MLB stats API
+      "https://api-web.nhle.com", // NHL API
+      "https://api.nhle.com", // NHL REST API
+      "https://statsapi.mlb.com", // MLB stats API
     ],
     enabled: true,
   },
 });
 
 /**
- * Dynamically register triggers
+ * Register triggers
  */
-triggers.forEach(trigger => {
-  Devvit.addTrigger(trigger);
-});
+Devvit.addTrigger(LogCommentReports);
+Devvit.addTrigger(LogModmailMessage);
+Devvit.addTrigger(AddCommentToRestrictedFlairPost);
+Devvit.addTrigger(LogPostReport);
 
 /**
- * Dynamically register menu items
+ * Register all menu items
  */
-menuItems.forEach(menuItem => {
+menuItems.forEach((menuItem) => {
   Devvit.addMenuItem(menuItem);
 });
 

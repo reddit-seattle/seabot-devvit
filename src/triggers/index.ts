@@ -1,11 +1,11 @@
-import LogCommentReport from './commentReports.js';
-import LogModmailMessage from './modmail.js';
-import AddCommentToRestrictedFlairPost from './postFlair.js';
-import LogPostReport from './postReports.js';
+import AddCommentToRestrictedFlairPost from "./addRestrictedFlairPostComment.js";
+import LogCommentReports from "./logCommentReports.js";
+import LogModmailMessage from "./logModmail.js";
+import LogPostReport from "./logPostReports.js";
 
-export const triggers: any[] = [
-    LogCommentReport,
-    LogModmailMessage,
-    AddCommentToRestrictedFlairPost,
-    LogPostReport,
-];
+export {
+  AddCommentToRestrictedFlairPost,
+  LogCommentReports,
+  LogModmailMessage,
+  LogPostReport,
+};

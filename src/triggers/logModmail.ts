@@ -1,6 +1,9 @@
 import { ModMailDefinition } from "@devvit/public-api";
 import { MODMAIL_REPORT_WEBHOOK } from "../settings.js";
-import { parseConversationType, parseParticipantAuthor } from "../utils/parsers.js";
+import {
+  parseConversationType,
+  parseParticipantAuthor,
+} from "../utils/parsers.js";
 import { SendContentToWebhook } from "../utils/webhooks.js";
 
 const LogModmailMessage: ModMailDefinition = {
@@ -8,7 +11,7 @@ const LogModmailMessage: ModMailDefinition = {
   onEvent: async (event, context) => {
     try {
       const discordWebhookUrl = (await context.settings.get(
-        MODMAIL_REPORT_WEBHOOK
+        MODMAIL_REPORT_WEBHOOK,
       )) as string;
       if (!discordWebhookUrl) {
         return;

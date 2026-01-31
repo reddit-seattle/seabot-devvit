@@ -1,12 +1,12 @@
-import { Context } from "@devvit/public-api";
+import { Context, RemovalReason } from "@devvit/public-api";
 
 export interface RemovalOptions {
     /** Target ID (post or comment) */
     targetId: string;
     /** Context from the menu item */
     context: Context;
-    /** Rule search terms to find the removal reason */
-    ruleSearchTerms: string[];
+    /** Regex pattern to match removal reason title (case-insensitive) */
+    rulePattern: string;
     /** Whether this is a post (true) or comment (false) */
     isPost: boolean;
     /** Optional footer text to append to the removal comment */
@@ -14,10 +14,19 @@ export interface RemovalOptions {
 }
 
 /**
- * Generic helper function to remove posts or comments with official removal reasons
+ * Removes a post or comment with a fetched subreddit removal reason based on regex pattern.
+ * @param options  Options for removal including targetId, context, rule pattern, and item type.
+ * @returns Promise that resolves when removal is complete.
+ * @remarks
+ * This function performs the following steps:
+ * 1. Fetches the target post or comment by ID.
+ * 2. Checks if the target is already removed; if so, it shows a toast and exits.
+ * 3. Retrieves subreddit removal reasons and selects first one matching the provided regex pattern.
+ * 4. If a matching reason is found, it removes the target, adds a removal note, and submits
+ *    a distinguished, stickied, and locked comment with the removal reason message.
  */
-export async function removeWithReason(options: RemovalOptions): Promise<void> {
-    const { targetId, context, ruleSearchTerms, isPost, footer } = options;
+export async function removeWithFetchedRemovalReason(options: RemovalOptions): Promise<void> {
+    const { targetId, context, rulePattern, isPost, footer } = options;
     const itemType = isPost ? 'post' : 'comment';
 
     // Get the target item
@@ -41,18 +50,16 @@ export async function removeWithReason(options: RemovalOptions): Promise<void> {
     // Get subreddit removal reasons
     const removalReasons = await context.reddit.getSubredditRemovalReasons(context.subredditName!);
 
-    // Find the matching removal reason using title search terms
-    const matchingReason = removalReasons.find((reason: any) =>
-        ruleSearchTerms.some(term =>
-            reason.title?.toLowerCase().includes(term.toLowerCase())
-        )
+    // Find the matching removal reason using regex pattern (case-insensitive)
+    const regex = new RegExp(rulePattern, 'i');
+    const matchingReason = removalReasons.find((reason: RemovalReason) =>
+        reason.title && regex.test(reason.title)
     );
 
     // Handle case where no matching removal reason is found
     if (!matchingReason) {
-        const searchTermsStr = ruleSearchTerms.join(', ');
-        console.error(`Could not find removal reason matching: ${searchTermsStr}`);
-        context.ui.showToast(`Error: Could not find removal reason for: ${searchTermsStr}`);
+        console.error(`Could not find removal reason matching pattern: ${rulePattern}`);
+        context.ui.showToast(`Error: Could not find removal reason matching: ${rulePattern}`);
         return;
     }
 

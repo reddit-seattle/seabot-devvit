@@ -1,6 +1,16 @@
 import { MenuItem } from "@devvit/public-api";
 import { RESTRICTED_FLAIR_TEXT } from "../settings.js";
 
+
+/**
+ * Menu item to restrict a post to flaired users only by setting a specific flair.
+ * When selected, it updates the post's flair to the predefined restricted flair text.
+ * If the post already has the restricted flair, it notifies the user and takes no action.
+ * 
+ * @remarks
+ * Requires AutoModerator configuration to enforce the restriction.
+ * See docs/RestrictedFlairSetup.md for complete setup instructions.
+ */
 const RestrictPostToFlairedUsers: MenuItem = {
   label: "Require Flair for Comments",
   description: "Restrict this post to flaired users",
