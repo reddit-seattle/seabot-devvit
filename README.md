@@ -27,7 +27,7 @@ Provides the ability to notify discord webhooks with embeds for:
 ## Configuration
 
 ### Removal Menu Items
-Edit [`src/menuItems/removalMenuConfig.ts`](./src/menuItems/removalMenuConfig.ts) to add or modify quick removal options.
+Edit [`src/settings.ts`](./src/settings.ts) and update the `REMOVAL_MENU_CONFIGS` constant to add or modify quick removal options.
 
 ### Discord Webhooks
 Configure webhook URLs through the app settings in Reddit.
