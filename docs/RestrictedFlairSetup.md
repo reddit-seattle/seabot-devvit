@@ -1,6 +1,6 @@
 # Restricted Flair Setup
 
-This document describes our 'Market Traffic Only' feature - a restricted mod-only post flair that allows removes comments on specific posts from users who have not equipped a user flair.
+This document describes our 'Market Traffic Only' feature - a restricted mod-only post flair that removes comments on specific posts from users who have not equipped a user flair.
 
 ## Overview
 
