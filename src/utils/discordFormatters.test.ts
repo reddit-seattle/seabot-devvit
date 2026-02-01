@@ -291,6 +291,24 @@ describe("discordFormatters", () => {
 
       expect(result).toEqual(["Score: **0**", "Total Reports: **3**"]);
     });
+
+    it("should show upvotes/downvotes when available", () => {
+      const mockSubmission = {
+        score: 150,
+        upvotes: 200,
+        downvotes: 50,
+        numReports: 1,
+        createdAt: new Date("2025-01-12T14:30:00Z"),
+      } as any;
+
+      const result = formatScoreInfo(mockSubmission);
+
+      expect(result[0]).toContain("200");
+      expect(result[0]).toContain("50");
+      expect(result[0]).toContain("[**150**]");
+      expect(result).toContain("Created: <t:1736692200:R>");
+      expect(result).toContain("Total Reports: **1**");
+    });
   });
 
   describe("formatCommentContent", () => {
