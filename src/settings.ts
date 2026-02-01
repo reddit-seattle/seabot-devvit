@@ -45,13 +45,8 @@ export interface RemovalMenuConfig {
 }
 
 /**
- * Quick removal menu configurations
- * 
- * CONFIGURE THESE to match your subreddit's rules:
- * - Update labels and descriptions to match your rule names
- * - Modify rulePattern to match your AutoModerator removal reasons
- * - Add or remove menu items as needed for your subreddit
- * - Patterns are case-insensitive regex patterns
+ * Custom remove-and-add-removal-reason mod menu items, modify to match your subreddit's rules.
+ * Patterns are case-insensitive regex to match your removal reason titles
  */
 export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
   {
