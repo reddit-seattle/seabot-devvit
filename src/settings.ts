@@ -55,7 +55,7 @@ export interface RemovalMenuConfig {
  */
 export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
   {
-    label: "r/AskSeattle",
+    label: "Remove: AskSeattle",
     description: "Rule 5: Use r/AskSeattle for recommendations",
     location: "post",
     rulePattern: "askseattle|rule 5",
@@ -66,13 +66,13 @@ export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
   },
   {
     label: "Remove: Be Good",
-    description: "Remove comment and apply Rule 1: Be Good",
+    description: "Rule 1: Be Good",
     location: "comment",
     rulePattern: "be good|rule 1",
   },
   {
     label: "Remove: Low-Effort Content",
-    description: "Remove post and apply Rule 4: No low-effort content",
+    description: "Rule 4: No low-effort content",
     location: "post",
     rulePattern: "low-effort|low effort|rule 4",
   },
