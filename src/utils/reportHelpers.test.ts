@@ -134,11 +134,7 @@ describe("reportHelpers", () => {
     });
 
     it("should build fields for both mod and user reports", () => {
-      const fields = buildReportReasonFields(
-        ["Rule 1"],
-        ["Spam"],
-        undefined,
-      );
+      const fields = buildReportReasonFields(["Rule 1"], ["Spam"], undefined);
 
       expect(fields).toHaveLength(2);
       expect(fields[0].name).toContain("Mod Reports");
@@ -194,9 +190,7 @@ describe("reportHelpers", () => {
 
   describe("sendReportToDiscord", () => {
     it("should send formatted embed to webhook", async () => {
-      const mockSendContentToWebhook = vi.mocked(
-        webhooks.SendContentToWebhook,
-      );
+      const mockSendContentToWebhook = vi.mocked(webhooks.SendContentToWebhook);
 
       await createDiscordEmbed(
         "https://discord.com/webhook",

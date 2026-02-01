@@ -34,7 +34,8 @@ export function createRemovalMenuItem(config: RemovalMenuConfig): MenuItem {
       } catch (error) {
         console.error(`Error processing ${config.label} removal:`, error);
         context.ui.showToast(
-          `Failed to process ${config.label} removal: ` + (error || "Unknown error")
+          `Failed to process ${config.label} removal: ` +
+            (error || "Unknown error"),
         );
       }
     },

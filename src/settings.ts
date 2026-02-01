@@ -8,7 +8,7 @@ Existing comments are not removed when this action is applied, **please do not r
 
 /**
  * Discord Custom Emojis for upvotes/downvotes
- * 
+ *
  * CONFIGURE THESE with your Discord server's custom emoji codes:
  * 1. In Discord, type \:emoji_name:
  * 2. Copy the resulting code that looks like: <:emoji_name:123456789>
@@ -41,7 +41,10 @@ export interface RemovalMenuConfig {
   /** Regex pattern to match removal reason */
   rulePattern: string;
   /** Optional function to generate footer text for removal comment */
-  footerGenerator?: (context: Context, targetId: string) => Promise<string | undefined>;
+  footerGenerator?: (
+    context: Context,
+    targetId: string,
+  ) => Promise<string | undefined>;
 }
 
 /**
@@ -56,7 +59,12 @@ export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
     rulePattern: "askseattle|rule 5",
     footerGenerator: async (context, targetId) => {
       const post = await context.reddit.getPostById(targetId);
-      return createResubmissionLink("AskSeattle", post.title, post.url, post.body);
+      return createResubmissionLink(
+        "AskSeattle",
+        post.title,
+        post.url,
+        post.body,
+      );
     },
   },
   {

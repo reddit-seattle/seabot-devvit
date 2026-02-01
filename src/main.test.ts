@@ -29,7 +29,10 @@ vi.mock("./menuItems/index.js", () => ({
 vi.mock("./triggers/index.js", () => ({
   LogCommentReports: { event: "CommentReport", onEvent: vi.fn() },
   LogModmailMessage: { event: "ModMail", onEvent: vi.fn() },
-  AddCommentToRestrictedFlairPost: { event: "PostFlairUpdate", onEvent: vi.fn() },
+  AddCommentToRestrictedFlairPost: {
+    event: "PostFlairUpdate",
+    onEvent: vi.fn(),
+  },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
 }));
 
@@ -66,14 +69,16 @@ describe("main.ts", () => {
     // Reset modules and clear mocks first
     vi.resetModules();
     mockDevvit.addTrigger.mockClear();
-    
+
     // Import main to trigger registration
     await import("./main.js");
 
     expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(4);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(AddCommentToRestrictedFlairPost);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
+      AddCommentToRestrictedFlairPost,
+    );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
   });
 
