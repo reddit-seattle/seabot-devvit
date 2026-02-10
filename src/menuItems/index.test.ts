@@ -1,26 +1,26 @@
-import { describe, it, expect } from 'vitest';
-import { menuItems } from './index.js';
+import { describe, it, expect } from "vitest";
+import { menuItems } from "./index.js";
 
-describe('menuItems index', () => {
-  it('should export all menu items', () => {
+describe("menuItems index", () => {
+  it("should export all menu items", () => {
     expect(menuItems).toBeDefined();
     expect(Array.isArray(menuItems)).toBe(true);
     expect(menuItems).toHaveLength(5);
-    
+
     // Verify each menu item has the required properties
-    menuItems.forEach(item => {
-      expect(item).toHaveProperty('label');
-      expect(item).toHaveProperty('onPress');
-      expect(typeof item.onPress).toBe('function');
+    menuItems.forEach((item) => {
+      expect(item).toHaveProperty("label");
+      expect(item).toHaveProperty("onPress");
+      expect(typeof item.onPress).toBe("function");
     });
   });
 
-  it('should include all expected menu items', () => {
-    const labels = menuItems.map(item => item.label);
-    expect(labels).toContain('Remove for r/AskSeattle');
-    expect(labels).toContain('Remove for Low-Effort Content');
-    expect(labels).toContain('Require Flair for Comments');
-    expect(labels).toContain('Comment Nuke');
-    expect(labels).toContain('Remove for Be Good');
+  it("should include all expected menu items", () => {
+    const labels = menuItems.map((item) => item.label);
+    expect(labels).toContain("Remove: AskSeattle");
+    expect(labels).toContain("Remove: Low-Effort Content");
+    expect(labels).toContain("Remove: Be Good");
+    expect(labels).toContain("Require Flair for Comments");
+    expect(labels).toContain("Comment Nuke");
   });
 });

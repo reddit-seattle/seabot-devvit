@@ -1,6 +1,15 @@
 import { MenuItem } from "@devvit/public-api";
 import { RESTRICTED_FLAIR_TEXT } from "../settings.js";
 
+/**
+ * Menu item to restrict a post to flaired users only by setting a specific flair.
+ * When selected, it updates the post's flair to the predefined restricted flair text.
+ * If the post already has the restricted flair, it notifies the user and takes no action.
+ *
+ * @remarks
+ * Requires AutoModerator configuration to enforce the restriction.
+ * See docs/RestrictedFlairSetup.md for complete setup instructions.
+ */
 const RestrictPostToFlairedUsers: MenuItem = {
   label: "Require Flair for Comments",
   description: "Restrict this post to flaired users",
@@ -12,13 +21,13 @@ const RestrictPostToFlairedUsers: MenuItem = {
       console.error("Menu action has no target.");
       return;
     }
-    
+
     try {
       // Check if the post already has the restricted flair
       const post = await context.reddit.getPostById(targetId);
       console.log(
         "Checking post for existing restricted flair:",
-        `https://reddit.com${post.permalink}`
+        `https://reddit.com${post.permalink}`,
       );
       if (post?.flair?.text === RESTRICTED_FLAIR_TEXT) {
         const message = `This post is already restricted to flaired users.`;
@@ -55,7 +64,7 @@ const RestrictPostToFlairedUsers: MenuItem = {
     } catch (error) {
       console.error("Error restricting post to flaired users:", error);
       context.ui.showToast(
-        "Failed to restrict post to flaired users: " + error || "Unknown error"
+        "Failed to restrict post to flaired users: " + error || "Unknown error",
       );
     }
   },
