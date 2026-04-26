@@ -110,7 +110,9 @@ describe("removalMenuFactory", () => {
         };
 
         const menuItem = createRemovalMenuItem(config);
-        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+        const consoleError = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
 
         const event = { targetId: undefined };
         const context = {} as any;
@@ -118,8 +120,10 @@ describe("removalMenuFactory", () => {
         await menuItem.onPress!(event as any, context);
 
         expect(consoleError).toHaveBeenCalledWith("Menu action has no target.");
-        expect(removalHelper.removeWithFetchedRemovalReason).not.toHaveBeenCalled();
-        
+        expect(
+          removalHelper.removeWithFetchedRemovalReason,
+        ).not.toHaveBeenCalled();
+
         consoleError.mockRestore();
       });
 
@@ -137,7 +141,9 @@ describe("removalMenuFactory", () => {
 
         await menuItem.onPress!(event as any, context);
 
-        expect(removalHelper.removeWithFetchedRemovalReason).toHaveBeenCalledWith({
+        expect(
+          removalHelper.removeWithFetchedRemovalReason,
+        ).toHaveBeenCalledWith({
           targetId: "post_123",
           context,
           rulePattern: "test pattern",
@@ -160,7 +166,9 @@ describe("removalMenuFactory", () => {
 
         await menuItem.onPress!(event as any, context);
 
-        expect(removalHelper.removeWithFetchedRemovalReason).toHaveBeenCalledWith({
+        expect(
+          removalHelper.removeWithFetchedRemovalReason,
+        ).toHaveBeenCalledWith({
           targetId: "comment_456",
           context,
           rulePattern: "test pattern",
@@ -186,7 +194,9 @@ describe("removalMenuFactory", () => {
         await menuItem.onPress!(event as any, context);
 
         expect(footerGenerator).toHaveBeenCalledWith(context, "post_789");
-        expect(removalHelper.removeWithFetchedRemovalReason).toHaveBeenCalledWith({
+        expect(
+          removalHelper.removeWithFetchedRemovalReason,
+        ).toHaveBeenCalledWith({
           targetId: "post_789",
           context,
           rulePattern: "test",
@@ -196,9 +206,9 @@ describe("removalMenuFactory", () => {
       });
 
       it("should handle errors and show toast", async () => {
-        vi.mocked(removalHelper.removeWithFetchedRemovalReason).mockRejectedValueOnce(
-          new Error("Test error"),
-        );
+        vi.mocked(
+          removalHelper.removeWithFetchedRemovalReason,
+        ).mockRejectedValueOnce(new Error("Test error"));
 
         const config: RemovalMenuConfig = {
           label: "Test Removal",
@@ -208,7 +218,9 @@ describe("removalMenuFactory", () => {
         };
 
         const menuItem = createRemovalMenuItem(config);
-        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+        const consoleError = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
         const showToast = vi.fn();
         const event = { targetId: "post_error" };
         const context = { ui: { showToast } } as any;
