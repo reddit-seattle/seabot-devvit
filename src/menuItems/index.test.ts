@@ -18,7 +18,7 @@ describe("menuItems index", () => {
   it("should include all expected menu items", () => {
     const labels = menuItems.map((item) => item.label);
     expect(labels).toContain("Remove: AskSeattle");
-    expect(labels).toContain("Remove: Low-Effort Content");
+    expect(labels).toContain("Remove: Not Seattle-Related");
     expect(labels).toContain("Remove: Be Good");
     expect(labels).toContain("Require Flair for Comments");
     expect(labels).toContain("Comment Nuke");

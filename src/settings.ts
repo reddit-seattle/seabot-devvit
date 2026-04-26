@@ -74,10 +74,10 @@ export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
     rulePattern: "be good|rule 1",
   },
   {
-    label: "Remove: Low-Effort Content",
-    description: "Rule 4: No low-effort content",
+    label: "Remove: Not Seattle-Related",
+    description: "Rule 2: Must be Seattle-related",
     location: "post",
-    rulePattern: "low-effort|low effort|rule 4",
+    rulePattern: "seattle-related|rule 2",
   },
 ];
 
@@ -101,11 +101,14 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   },
 ];
 
-const Settings = DISCORD_WEBHOOK_SETTINGS.map(({ name, label }) => ({
-  type: "string",
-  name,
-  label,
-  scope: SettingScope.Installation,
-})) as SettingsFormField[];
+const Settings: SettingsFormField[] = [
+  // Discord webhook settings
+  ...DISCORD_WEBHOOK_SETTINGS.map(({ name, label }) => ({
+    type: "string" as const,
+    name,
+    label,
+    scope: SettingScope.Installation,
+  })),
+];
 
 export default Settings;
