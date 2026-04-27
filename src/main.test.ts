@@ -4,6 +4,8 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  ScheduleWeeklyThreadOnInstall,
+  ScheduleWeeklyThreadOnUpgrade,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -11,6 +13,7 @@ const mockDevvit = {
   configure: vi.fn(),
   addTrigger: vi.fn(),
   addMenuItem: vi.fn(),
+  addSchedulerJob: vi.fn(),
   addSettings: vi.fn(),
 };
 
@@ -34,6 +37,18 @@ vi.mock("./triggers/index.js", () => ({
     onEvent: vi.fn(),
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
+  ScheduleWeeklyThreadOnInstall: {
+    event: "AppInstall",
+    onEvent: vi.fn(),
+  },
+  ScheduleWeeklyThreadOnUpgrade: {
+    event: "AppUpgrade",
+    onEvent: vi.fn(),
+  },
+}));
+
+vi.mock("./weeklyThread/job.js", () => ({
+  CreateWeeklyThreadJob: { name: "createWeeklyThread", onRun: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -54,11 +69,14 @@ describe("main.ts", () => {
 
     expect(mockDevvit.configure).toHaveBeenCalledWith({
       redditAPI: true,
+      redis: true,
       http: {
         domains: [
-          "https://api-web.nhle.com",
-          "https://api.nhle.com",
-          "https://statsapi.mlb.com",
+          "https://api.weather.gov",
+          "https://www.wsdot.wa.gov",
+          "https://site.api.espn.com",
+          "https://lscluster.hockeytech.com",
+          "https://www.trumba.com",
         ],
         enabled: true,
       },
@@ -73,13 +91,19 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(4);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
       AddCommentToRestrictedFlairPost,
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
+      ScheduleWeeklyThreadOnInstall,
+    );
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
+      ScheduleWeeklyThreadOnUpgrade,
+    );
   });
 
   it("should register all menu items dynamically", async () => {
@@ -107,6 +131,18 @@ describe("main.ts", () => {
     await import("./main.js");
 
     expect(mockDevvit.addSettings).toHaveBeenCalledWith(Settings);
+  });
+
+  it("should register scheduled jobs", async () => {
+    vi.resetModules();
+    mockDevvit.addSchedulerJob.mockClear();
+
+    const { CreateWeeklyThreadJob } = await import("./weeklyThread/job.js");
+    await import("./main.js");
+
+    expect(mockDevvit.addSchedulerJob).toHaveBeenCalledWith(
+      CreateWeeklyThreadJob,
+    );
   });
 
   it("should export Devvit as default", async () => {

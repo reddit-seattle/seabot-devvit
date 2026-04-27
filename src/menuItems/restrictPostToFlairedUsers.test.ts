@@ -157,7 +157,7 @@ describe("RestrictPostToFlairedUsers", () => {
     await RestrictPostToFlairedUsers.onPress(mockEvent, mockContext);
 
     expect(mockContext.ui.showToast).toHaveBeenCalledWith(
-      "Failed to restrict post to flaired users: Error: " + errorMessage,
+      "Failed to restrict post to flaired users: " + errorMessage,
     );
   });
 
@@ -170,7 +170,7 @@ describe("RestrictPostToFlairedUsers", () => {
     await RestrictPostToFlairedUsers.onPress(mockEvent, mockContext);
 
     expect(mockContext.ui.showToast).toHaveBeenCalledWith(
-      "Failed to restrict post to flaired users: Error: Post not found",
+      "Failed to restrict post to flaired users: Post not found",
     );
   });
 
@@ -192,7 +192,7 @@ describe("RestrictPostToFlairedUsers", () => {
     await RestrictPostToFlairedUsers.onPress(mockEvent, mockContext);
 
     expect(mockContext.ui.showToast).toHaveBeenCalledWith(
-      "Failed to restrict post to flaired users: null",
+      "Failed to restrict post to flaired users: Unknown error",
     );
   });
 
@@ -203,7 +203,7 @@ describe("RestrictPostToFlairedUsers", () => {
     await RestrictPostToFlairedUsers.onPress(mockEvent, mockContext);
 
     expect(mockContext.ui.showToast).toHaveBeenCalledWith(
-      "Failed to restrict post to flaired users: ",
+      "Failed to restrict post to flaired users: Unknown error",
     );
   });
 });

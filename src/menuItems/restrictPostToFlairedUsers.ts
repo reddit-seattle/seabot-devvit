@@ -1,5 +1,6 @@
 import { MenuItem } from "@devvit/public-api";
 import { RESTRICTED_FLAIR_TEXT } from "../settings.js";
+import { showErrorToast } from "./showErrorToast.js";
 
 /**
  * Menu item to restrict a post to flaired users only by setting a specific flair.
@@ -43,29 +44,12 @@ const RestrictPostToFlairedUsers: MenuItem = {
         subredditName: context.subredditName || "",
       });
 
-      // Add to Mod Log (disabled - requires privileged permissions)
-      // try {
-      //   // Get current user for mod log attribution
-      //   const user = await context.reddit.getCurrentUser();
-      //   await context.modLog.add({
-      //     action: 'editflair',
-      //     target: targetId,
-      //     details: 'flair restriction',
-      //     description: `u/${user?.username || 'unknown'} restricted post to flaired users only.`,
-      //   });
-      // } catch (e: unknown) {
-      //   console.error(`Failed to add modlog for post flair restriction: ${targetId}.`, (e as Error).message);
-      // }
-
       context.ui.showToast({
         text: `Post restricted to flaired users.`,
         appearance: "success",
       });
     } catch (error) {
-      console.error("Error restricting post to flaired users:", error);
-      context.ui.showToast(
-        "Failed to restrict post to flaired users: " + error || "Unknown error",
-      );
+      showErrorToast(context, "restrict post to flaired users", error);
     }
   },
 };

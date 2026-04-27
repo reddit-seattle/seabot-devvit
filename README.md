@@ -24,6 +24,11 @@ Provides the ability to notify discord webhooks with embeds for:
 ### Bulk Actions
 - Comment nuke - Remove all comments in a single thread
 
+### Weekly What's Happening Thread
+- Configurable weekly sticky thread with subreddit-level controls
+- Generated sections for weather, WSDOT alerts, citywide events, sports
+- Weekly dedupe protection so duplicate scheduler runs do not create duplicate threads
+
 ## Configuration
 
 ### Removal Menu Items
@@ -31,6 +36,13 @@ Edit [`src/settings.ts`](./src/settings.ts) and update the `REMOVAL_MENU_CONFIGS
 
 ### Discord Webhooks
 Configure webhook URLs through the app settings in Reddit.
+
+### Weekly Thread
+Configure these through the app settings in Reddit:
+- Enable or disable the weekly thread job
+- Customize the thread title
+- Customize the thread header and footer
+- Other settings for API keys / config added as necessary
 
 ### Restricted Flair
 See [Restricted Flair Setup](./docs/RestrictedFlairSetup.md) for complete setup instructions including sample AutoModerator configuration.

@@ -6,16 +6,16 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  ScheduleWeeklyThreadOnInstall,
+  ScheduleWeeklyThreadOnUpgrade,
 } from "./triggers/index.js";
+import { EXTERNAL_HTTP_DOMAINS } from "./weeklyThread/api.js";
+import { CreateWeeklyThreadJob } from "./weeklyThread/job.js";
 Devvit.configure({
   redditAPI: true,
+  redis: true,
   http: {
-    // You can ignore this. These endpoints are not used currently...
-    domains: [
-      "https://api-web.nhle.com", // NHL API
-      "https://api.nhle.com", // NHL REST API
-      "https://statsapi.mlb.com", // MLB stats API
-    ],
+    domains: EXTERNAL_HTTP_DOMAINS,
     enabled: true,
   },
 });
@@ -27,6 +27,9 @@ Devvit.addTrigger(LogCommentReports);
 Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
+Devvit.addTrigger(ScheduleWeeklyThreadOnInstall);
+Devvit.addTrigger(ScheduleWeeklyThreadOnUpgrade);
+Devvit.addSchedulerJob(CreateWeeklyThreadJob);
 
 /**
  * Register all menu items

@@ -1,5 +1,11 @@
 import { Context, SettingScope, SettingsFormField } from "@devvit/public-api";
 import { createResubmissionLink } from "./utils/reddithelpers.js";
+import {
+  WEEKLY_POST_ENABLED,
+  WEEKLY_POST_FOOTER,
+  WEEKLY_POST_HEADER,
+  WEEKLY_POST_TITLE_TEMPLATE,
+} from "./weeklyThread/constants.js";
 
 export const RESTRICTED_FLAIR_TEXT = "Market Traffic Only";
 export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - New comments by users without an equipped r/Seattle flair will be automatically removed.
@@ -85,6 +91,15 @@ const DISCORD_WEBHOOK_SUFFIX = "webhook URL";
 export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
 export const COMMENT_REPORT_WEBHOOK = "commentReportWebhookURL";
 export const MODMAIL_REPORT_WEBHOOK = "modmailWebhookURL";
+export const PWHL_API_KEY = "pwhlApiKey";
+export const WSDOT_API_KEY = "wsdotApiKey";
+export const CITY_EVENTS_RSS_URL = "cityEventsRssUrl";
+export {
+  WEEKLY_POST_ENABLED,
+  WEEKLY_POST_FOOTER,
+  WEEKLY_POST_HEADER,
+  WEEKLY_POST_TITLE_TEMPLATE,
+};
 
 const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
@@ -102,6 +117,58 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
 ];
 
 const Settings: SettingsFormField[] = [
+  {
+    type: "boolean",
+    name: WEEKLY_POST_ENABLED,
+    label: "enable weekly ask seattle thread",
+    scope: SettingScope.Installation,
+  },
+  {
+    type: "string",
+    name: WEEKLY_POST_TITLE_TEMPLATE,
+    label: "weekly thread title template",
+    helpText:
+      "Supports {{date:FORMAT}}, {{weekStart:FORMAT}}, and {{weekEnd:FORMAT}} macros.",
+    scope: SettingScope.Installation,
+  },
+  {
+    type: "paragraph",
+    name: WEEKLY_POST_HEADER,
+    label: "weekly thread header",
+    helpText: "Markdown is supported. Date macros also work here.",
+    scope: SettingScope.Installation,
+  },
+  {
+    type: "paragraph",
+    name: WEEKLY_POST_FOOTER,
+    label: "weekly thread footer",
+    helpText: "Markdown is supported. Leave blank to omit the footer section.",
+    scope: SettingScope.Installation,
+  },
+  {
+    type: "string",
+    name: PWHL_API_KEY,
+    label: "pwhl api key",
+    helpText:
+      "Optional. Used only for Seattle Torrent / PWHL fixtures. Leave blank to skip PWHL data.",
+    scope: SettingScope.Installation,
+  },
+  {
+    type: "string",
+    name: WSDOT_API_KEY,
+    label: "wsdot traveler api key",
+    helpText:
+      "Optional. Used to pull WSDOT highway alerts. Request a free key at https://wsdot.wa.gov/traffic/api/. Leave blank to skip traffic alerts.",
+    scope: SettingScope.Installation,
+  },
+  {
+    type: "string",
+    name: CITY_EVENTS_RSS_URL,
+    label: "city events RSS url",
+    helpText:
+      "Optional. Trumba RSS feed (https://www.trumba.com/calendars/...). Use the calendar's filter UI to select event types/categories, then paste the resulting RSS URL here. Leave blank to skip the city events section.",
+    scope: SettingScope.Installation,
+  },
   // Discord webhook settings
   ...DISCORD_WEBHOOK_SETTINGS.map(({ name, label }) => ({
     type: "string" as const,
