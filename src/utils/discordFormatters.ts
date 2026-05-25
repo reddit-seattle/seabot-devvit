@@ -147,3 +147,47 @@ export function createEmbedFooter(): { footer: { text: string } } {
     },
   };
 }
+
+/**
+ * Formats content for a deleted post webhook message
+ */
+export function formatDeletedPostContent(
+  title: string,
+  author: string,
+  content?: string,
+): string {
+  const lines: string[] = [
+    `**Author:** ${author}`,
+    `**Title:** ${title}`,
+  ];
+
+  if (content) {
+    const preview =
+      content.length > 500 ? `${content.slice(0, 497)}...` : content;
+    lines.push(`**Content Preview:**\n\`\`\`\n${preview}\n\`\`\``);
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Formats content for a deleted comment webhook message
+ */
+export function formatDeletedCommentContent(
+  body: string,
+  author: string,
+  postTitle?: string,
+): string {
+  const lines: string[] = [
+    `**Author:** ${author}`,
+  ];
+
+  if (postTitle) {
+    lines.push(`**Post:** ${postTitle}`);
+  }
+
+  const preview = body.length > 500 ? `${body.slice(0, 497)}...` : body;
+  lines.push(`**Comment:**\n\`\`\`\n${preview}\n\`\`\``);
+
+  return lines.join("\n");
+}
