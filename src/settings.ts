@@ -85,6 +85,10 @@ const DISCORD_WEBHOOK_SUFFIX = "webhook URL";
 export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
 export const COMMENT_REPORT_WEBHOOK = "commentReportWebhookURL";
 export const MODMAIL_REPORT_WEBHOOK = "modmailWebhookURL";
+export const AUTOMOD_FILTER_COMMENT_WEBHOOK = "automodFilterCommentWebhookURL";
+export const AUTOMOD_FILTER_POST_WEBHOOK = "automodFilterPostWebhookURL";
+export const POST_DELETE_WEBHOOK = "postDeleteWebhookURL";
+export const COMMENT_DELETE_WEBHOOK = "commentDeleteWebhookURL";
 
 const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
@@ -98,6 +102,22 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
     name: MODMAIL_REPORT_WEBHOOK,
     label: `new modmail ${DISCORD_WEBHOOK_SUFFIX}`,
+  },
+  {
+    name: AUTOMOD_FILTER_COMMENT_WEBHOOK,
+    label: `automod filtered comment ${DISCORD_WEBHOOK_SUFFIX}`,
+  },
+  {
+    name: AUTOMOD_FILTER_POST_WEBHOOK,
+    label: `automod filtered post ${DISCORD_WEBHOOK_SUFFIX}`,
+  },
+  {
+    name: POST_DELETE_WEBHOOK,
+    label: `post deletion ${DISCORD_WEBHOOK_SUFFIX}`,
+  },
+  {
+    name: COMMENT_DELETE_WEBHOOK,
+    label: `comment deletion ${DISCORD_WEBHOOK_SUFFIX}`,
   },
 ];
 

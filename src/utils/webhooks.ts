@@ -3,13 +3,17 @@
  * */
 export const SendContentToWebhook = async (
   webhookURL: string,
-  payload: { content?: string; embeds: Record<string, unknown>[] },
+  payload: { content?: string; embeds?: Record<string, unknown>[] },
 ) => {
-  await fetch(webhookURL, {
+  const response = await fetch(webhookURL, {
     method: "post",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
+
+  if (!response.ok) {
+    console.error(`Webhook failed: ${response.status} ${response.statusText}`);
+  }
 };

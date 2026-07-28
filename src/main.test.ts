@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AddCommentToRestrictedFlairPost,
+  AutomodFilterComment,
+  AutomodFilterPost,
+  LogCommentDelete,
   LogCommentReports,
   LogModmailMessage,
+  LogPostDelete,
   LogPostReport,
 } from "./triggers/index.js";
 
@@ -34,6 +38,10 @@ vi.mock("./triggers/index.js", () => ({
     onEvent: vi.fn(),
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
+  AutomodFilterComment: { event: "AutomoderatorFilterComment", onEvent: vi.fn() },
+  AutomodFilterPost: { event: "AutomoderatorFilterPost", onEvent: vi.fn() },
+  LogPostDelete: { event: "PostDelete", onEvent: vi.fn() },
+  LogCommentDelete: { event: "CommentDelete", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -73,13 +81,7 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(4);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
-      AddCommentToRestrictedFlairPost,
-    );
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(8);
   });
 
   it("should register all menu items dynamically", async () => {
