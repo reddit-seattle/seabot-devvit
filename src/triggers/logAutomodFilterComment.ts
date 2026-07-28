@@ -1,11 +1,15 @@
+import { OnAutomoderatorFilterCommentDefinition } from "@devvit/public-api";
+import { AUTOMOD_FILTER_COMMENT_WEBHOOK, Icons } from "../settings.js";
+import { createPermalinkLink } from "../utils/reddithelpers.js";
 import {
-  OnAutomoderatorFilterCommentDefinition,
-} from "@devvit/public-api";
+  buildSubmissionDetailsFields,
+  getWebhookUrl,
+  createDiscordEmbed,
+} from "../utils/reportHelpers.js";
 import {
-  AUTOMOD_FILTER_COMMENT_WEBHOOK,
-} from "../settings.js";
-import { SendContentToWebhook } from "../utils/webhooks.js";
-import { getWebhookUrl } from "../utils/reportHelpers.js";
+  formatCommentContent,
+  createDiscordField,
+} from "../utils/discordFormatters.js";
 
 /**
  * Logs when automod filters a comment.
@@ -20,13 +24,47 @@ const AutomodFilterComment: OnAutomoderatorFilterCommentDefinition = {
         console.warn("AutomoderatorFilterComment event missing comment data.");
         return;
       }
-      const webhookUrl = await getWebhookUrl(context, AUTOMOD_FILTER_COMMENT_WEBHOOK);
-      if (webhookUrl) {
-        await SendContentToWebhook(webhookUrl, {
-          content: `Automoderator filtered https://www.reddit.com${comment.permalink}. Reason: ${reason ?? 'No reason provided'}`,
-        });
+
+      const webhookUrl = await getWebhookUrl(
+        context,
+        AUTOMOD_FILTER_COMMENT_WEBHOOK,
+      );
+      if (!webhookUrl) {
+        return;
       }
-      return;
+
+      const submission = await context.reddit.getCommentById(comment.id ?? "");
+      const { authorId, postId, body, permalink } = submission;
+
+      const title = `${Icons.COMMENT} Automod Filtered Comment`;
+      const commentPermalink = createPermalinkLink(
+        permalink,
+        "Direct Comment Link",
+      );
+      const desc = body
+        ? `${commentPermalink}\n**Comment:**\n${formatCommentContent({ body }, 400)}\n**Reason:** ${reason ?? "No reason provided"}`
+        : `${commentPermalink}\n**Reason:** ${reason ?? "No reason provided"}`;
+
+      const author = authorId
+        ? await context.reddit.getUserById(authorId).catch(() => null)
+        : null;
+      const post = await context.reddit
+        .getPostById(postId ?? "")
+        .catch(() => null);
+
+      const fields = [
+        ...buildSubmissionDetailsFields(author ?? null, submission),
+      ];
+
+      if (post) {
+        const postLink = createPermalinkLink(
+          post.permalink,
+          post.title || "Unknown Post",
+        );
+        fields.push(createDiscordField("Post", postLink));
+      }
+
+      await createDiscordEmbed(webhookUrl, title, desc, fields);
     } catch (error) {
       console.error("Error in AutomoderatorFilterComment trigger:", error);
     }

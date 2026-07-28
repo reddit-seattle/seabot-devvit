@@ -1,8 +1,7 @@
 import { OnPostDeleteDefinition } from "@devvit/public-api";
 import { POST_DELETE_WEBHOOK, Icons } from "../settings.js";
-import { formatDeletedPostContent, createEmbedFooter } from "../utils/discordFormatters.js";
-import { getWebhookUrl } from "../utils/reportHelpers.js";
 import { SendContentToWebhook } from "../utils/webhooks.js";
+import { getWebhookUrl } from "../utils/reportHelpers.js";
 
 /**
  * Logs when a post is deleted.
@@ -24,18 +23,33 @@ const LogPostDelete: OnPostDeleteDefinition = {
       }
 
       const author = post.authorName || "unknown";
-      const title = post.title || "Untitled Post";
-      const content = formatDeletedPostContent(
-        title,
-        author,
-        post.body,
-      );
+      const title = `${Icons.POST} Post Deleted`;
+
+      // Create content preview if body exists
+      const contentPreview = post.body
+        ? post.body.length > 500
+          ? `${post.body.slice(0, 497)}...`
+          : post.body
+        : "No content";
+
+      const desc = [
+        `**Post:** ${post.title}`,
+        `**Author:** ${author}`,
+        `**Content:**`,
+        `\`\`\``,
+        `${contentPreview}`,
+        `\`\`\``,
+      ].join("\n");
 
       const embed = {
-        title: `${Icons.POST} Post Deleted`,
+        title,
         type: "rich",
-        description: content,
-        ...createEmbedFooter(),
+        description: desc,
+        footer: {
+          text: new Date().toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+          }),
+        },
       };
 
       await SendContentToWebhook(webhookUrl, {

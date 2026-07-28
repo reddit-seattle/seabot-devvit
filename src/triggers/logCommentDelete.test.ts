@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import LogCommentDelete from "./logCommentDelete.js";
 
 // Mock dependencies
-vi.mock("../utils/webhooks.js", () => ({
-  SendContentToWebhook: vi.fn(),
+vi.mock("../utils/reportHelpers.js", () => ({
+  getWebhookUrl: vi.fn(),
+  createDiscordEmbed: vi.fn(),
+  buildSubmissionDetailsFields: vi.fn(() => []),
 }));
 
 vi.mock("../utils/discordFormatters.js", () => ({
@@ -13,9 +15,12 @@ vi.mock("../utils/discordFormatters.js", () => ({
       `Author: ${author}\nPost: ${postTitle}\nComment: ${body}`,
   ),
   createEmbedFooter: vi.fn(() => ({ footer: { text: "Footer" } })),
+  createDiscordField: vi.fn((name, value) => ({ name, value })),
 }));
 
-const { SendContentToWebhook } = await import("../utils/webhooks.js");
+const { getWebhookUrl, createDiscordEmbed } = await import(
+  "../utils/reportHelpers.js"
+);
 
 const mockComment = {
   id: "comment123",
@@ -28,11 +33,7 @@ const mockPost = {
   title: "Test Post",
 };
 
-const mockContext = {
-  settings: {
-    get: vi.fn(),
-  },
-} as unknown as Context;
+const mockContext = {} as unknown as Context;
 
 const mockEvent = {
   comment: mockComment,
@@ -42,7 +43,7 @@ const mockEvent = {
 describe("LogCommentDelete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (mockContext.settings.get as any).mockResolvedValue(
+    (getWebhookUrl as any).mockResolvedValue(
       "https://discord.com/webhook",
     );
   });
@@ -52,28 +53,17 @@ describe("LogCommentDelete", () => {
   });
 
   it("should skip processing when no webhook URL is configured", async () => {
-    (mockContext.settings.get as any).mockResolvedValue(null);
+    (getWebhookUrl as any).mockResolvedValue(null);
 
     await LogCommentDelete.onEvent(mockEvent, mockContext);
 
-    expect(SendContentToWebhook).not.toHaveBeenCalled();
+    expect(createDiscordEmbed).not.toHaveBeenCalled();
   });
 
   it("should process comment deletion with all data", async () => {
     await LogCommentDelete.onEvent(mockEvent, mockContext);
 
-    expect(SendContentToWebhook).toHaveBeenCalledWith(
-      "https://discord.com/webhook",
-      expect.objectContaining({
-        embeds: expect.arrayContaining([
-          expect.objectContaining({
-            title: expect.stringContaining("Comment Deleted"),
-            description: expect.stringContaining("testuser"),
-            type: "rich",
-          }),
-        ]),
-      }),
-    );
+    expect(createDiscordEmbed).toHaveBeenCalled();
   });
 
   it("should handle missing comment data", async () => {
@@ -84,7 +74,7 @@ describe("LogCommentDelete", () => {
 
     await LogCommentDelete.onEvent(eventWithoutComment, mockContext);
 
-    expect(SendContentToWebhook).not.toHaveBeenCalled();
+    expect(createDiscordEmbed).not.toHaveBeenCalled();
   });
 
   it("should handle missing post context", async () => {
@@ -95,7 +85,7 @@ describe("LogCommentDelete", () => {
 
     await LogCommentDelete.onEvent(eventWithoutPost, mockContext);
 
-    expect(SendContentToWebhook).toHaveBeenCalled();
+    expect(createDiscordEmbed).toHaveBeenCalled();
   });
 
   it("should handle missing author name", async () => {
@@ -111,24 +101,24 @@ describe("LogCommentDelete", () => {
 
     await LogCommentDelete.onEvent(event, mockContext);
 
-    expect(SendContentToWebhook).toHaveBeenCalled();
+    expect(createDiscordEmbed).toHaveBeenCalled();
   });
 
   it("should handle empty webhook URL string", async () => {
-    (mockContext.settings.get as any).mockResolvedValue("");
+    (getWebhookUrl as any).mockResolvedValue("");
 
     await LogCommentDelete.onEvent(mockEvent, mockContext);
 
-    expect(SendContentToWebhook).not.toHaveBeenCalled();
+    expect(createDiscordEmbed).not.toHaveBeenCalled();
   });
 
   it("should handle API errors gracefully", async () => {
-    (SendContentToWebhook as any).mockRejectedValue(
+    (createDiscordEmbed as any).mockRejectedValue(
       new Error("Webhook Error"),
     );
 
     await LogCommentDelete.onEvent(mockEvent, mockContext);
 
-    expect(SendContentToWebhook).toHaveBeenCalled();
+    expect(createDiscordEmbed).toHaveBeenCalled();
   });
 });

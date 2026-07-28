@@ -1,8 +1,14 @@
 import { OnCommentDeleteDefinition } from "@devvit/public-api";
 import { COMMENT_DELETE_WEBHOOK, Icons } from "../settings.js";
-import { formatDeletedCommentContent, createEmbedFooter } from "../utils/discordFormatters.js";
-import { getWebhookUrl } from "../utils/reportHelpers.js";
-import { SendContentToWebhook } from "../utils/webhooks.js";
+import {
+  formatCommentContent,
+  createDiscordField,
+} from "../utils/discordFormatters.js";
+import {
+  getWebhookUrl,
+  buildSubmissionDetailsFields,
+  createDiscordEmbed,
+} from "../utils/reportHelpers.js";
 
 /**
  * Logs when a comment is deleted.
@@ -24,23 +30,30 @@ const LogCommentDelete: OnCommentDeleteDefinition = {
       }
 
       const author = comment.authorName || "unknown";
-      const postTitle = post?.title;
-      const content = formatDeletedCommentContent(
-        comment.body,
-        author,
-        postTitle,
-      );
+      const title = `${Icons.COMMENT} Comment Deleted`;
+      const commentPreview = comment.body
+        ? comment.body.length > 500
+          ? `${comment.body.slice(0, 497)}...`
+          : comment.body
+        : "No content";
 
-      const embed = {
-        title: `${Icons.COMMENT} Comment Deleted`,
-        type: "rich",
-        description: content,
-        ...createEmbedFooter(),
-      };
+      const desc = [
+        `**Author:** ${author}`,
+        `**Comment:**`,
+        `\`\`\``,
+        `${commentPreview}`,
+        `\`\`\``,
+      ].join("\n");
 
-      await SendContentToWebhook(webhookUrl, {
-        embeds: [embed],
-      });
+      const fields: Array<{ name: string; value: string }> = [];
+
+      // Add post context
+      if (post) {
+        const postLink = `[${post.title}](https://www.reddit.com${post.permalink})`;
+        fields.push(createDiscordField("Post", postLink));
+      }
+
+      await createDiscordEmbed(webhookUrl, title, desc, fields);
     } catch (error) {
       console.error("Error in CommentDelete trigger:", error);
     }

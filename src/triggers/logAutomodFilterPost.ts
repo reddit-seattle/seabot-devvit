@@ -1,11 +1,12 @@
+import { OnAutomoderatorFilterPostDefinition } from "@devvit/public-api";
+import { AUTOMOD_FILTER_POST_WEBHOOK, Icons } from "../settings.js";
+import { createPermalinkLink } from "../utils/reddithelpers.js";
 import {
-  OnAutomoderatorFilterPostDefinition,
-} from "@devvit/public-api";
-import {
-  AUTOMOD_FILTER_POST_WEBHOOK,
-} from "../settings.js";
-import { SendContentToWebhook } from "../utils/webhooks.js";
-import { getWebhookUrl } from "../utils/reportHelpers.js";
+  buildSubmissionDetailsFields,
+  getWebhookUrl,
+  createDiscordEmbed,
+} from "../utils/reportHelpers.js";
+import { formatCommentContent } from "../utils/discordFormatters.js";
 
 /**
  * Logs when automod filters a post.
@@ -20,13 +21,33 @@ const AutomodFilterPost: OnAutomoderatorFilterPostDefinition = {
         console.warn("AutomoderatorFilterPost event missing post data.");
         return;
       }
-      const webhookUrl = await getWebhookUrl(context, AUTOMOD_FILTER_POST_WEBHOOK);
-      if (webhookUrl) {
-        await SendContentToWebhook(webhookUrl, {
-          content: `Automoderator filtered https://www.reddit.com${post.permalink}. Reason: ${reason ?? 'No reason provided'}`,
-        });
+
+      const webhookUrl = await getWebhookUrl(
+        context,
+        AUTOMOD_FILTER_POST_WEBHOOK,
+      );
+      if (!webhookUrl) {
+        return;
       }
-      return;
+
+      const submission = await context.reddit.getPostById(post.id ?? "");
+      const { authorId, title: postTitle, permalink, body } = submission;
+
+      const title = `${Icons.POST} Automod Filtered Post`;
+      const postLink = createPermalinkLink(permalink, postTitle);
+      const desc = body
+        ? `${postLink}\n**Post Content:**\n${formatCommentContent({ body }, 400)}\n**Reason:** ${reason ?? "No reason provided"}`
+        : `${postLink}\n**Reason:** ${reason ?? "No reason provided"}`;
+
+      const author = authorId
+        ? await context.reddit.getUserById(authorId).catch(() => null)
+        : null;
+
+      const fields = [
+        ...buildSubmissionDetailsFields(author ?? null, submission),
+      ];
+
+      await createDiscordEmbed(webhookUrl, title, desc, fields);
     } catch (error) {
       console.error("Error in AutomoderatorFilterPost trigger:", error);
     }
