@@ -1,5 +1,9 @@
 import { MenuItem } from "@devvit/public-api";
-import { RESTRICTED_FLAIR_TEXT } from "../settings.js";
+import {
+  RESTRICTED_FLAIR_TEXT,
+  RESTRICTED_FLAIR_WEBHOOK,
+} from "../settings.js";
+import { SendContentToWebhook } from "../utils/webhooks.js";
 
 /**
  * Menu item to restrict a post to flaired users only by setting a specific flair.
@@ -41,6 +45,20 @@ const RestrictPostToFlairedUsers: MenuItem = {
         postId: targetId,
         text: RESTRICTED_FLAIR_TEXT,
         subredditName: context.subredditName || "",
+      });
+
+      // log mod action to webhook
+      await SendContentToWebhook(RESTRICTED_FLAIR_WEBHOOK, {
+        content: `https://reddit.com${post.permalink}`,
+        embeds: [
+          {
+            title: `\`${RESTRICTED_FLAIR_TEXT}\` mode enabled`,
+            description:
+              `[${post.title}](https://reddit.com${post.permalink})` +
+              "\n" +
+              `Applied by: ${context.username || "unknown user"}`,
+          },
+        ],
       });
 
       // Add to Mod Log (disabled - requires privileged permissions)

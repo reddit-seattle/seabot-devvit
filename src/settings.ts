@@ -85,6 +85,7 @@ const DISCORD_WEBHOOK_SUFFIX = "webhook URL";
 export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
 export const COMMENT_REPORT_WEBHOOK = "commentReportWebhookURL";
 export const MODMAIL_REPORT_WEBHOOK = "modmailWebhookURL";
+export const RESTRICTED_FLAIR_WEBHOOK = "restrictedFlairWebhookURL";
 
 const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
@@ -98,6 +99,10 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
     name: MODMAIL_REPORT_WEBHOOK,
     label: `new modmail ${DISCORD_WEBHOOK_SUFFIX}`,
+  },
+  {
+    name: RESTRICTED_FLAIR_WEBHOOK,
+    label: `restricted flair ${DISCORD_WEBHOOK_SUFFIX}`,
   },
 ];
 
