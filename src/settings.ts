@@ -74,6 +74,12 @@ export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
     rulePattern: "be good|rule 1",
   },
   {
+    label: "Remove: Low-Effort Content",
+    description: "Rule 4: No low-effort content",
+    location: "post",
+    rulePattern: "low-effort|low effort|rule 4",
+  },
+  {
     label: "Remove: Not Seattle-Related",
     description: "Rule 2: Must be Seattle-related",
     location: "post",
