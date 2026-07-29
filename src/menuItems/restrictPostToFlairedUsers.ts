@@ -4,6 +4,7 @@ import {
   RESTRICTED_FLAIR_WEBHOOK,
 } from "../settings.js";
 import { SendContentToWebhook } from "../utils/webhooks.js";
+import { createEmbedFooter } from "../utils/index.js";
 
 /**
  * Menu item to restrict a post to flaired users only by setting a specific flair.
@@ -51,18 +52,20 @@ const RestrictPostToFlairedUsers: MenuItem = {
       const discordWebhookUrl = (await context.settings.get(
         RESTRICTED_FLAIR_WEBHOOK,
       )) as string;
-      await SendContentToWebhook(discordWebhookUrl, {
-        content: `https://reddit.com${post.permalink}`,
-        embeds: [
-          {
-            title: `\`${RESTRICTED_FLAIR_TEXT}\` mode enabled`,
-            description:
-              `[${post.title}](https://reddit.com${post.permalink})` +
-              "\n" +
-              `Applied by: ${context.username || "unknown user"}`,
-          },
-        ],
-      });
+      if (discordWebhookUrl !== "") {
+        await SendContentToWebhook(discordWebhookUrl, {
+          embeds: [
+            {
+              title: `\`${RESTRICTED_FLAIR_TEXT}\` mode enabled`,
+              description:
+                `[${post.title}](https://reddit.com${post.permalink})` +
+                "\n" +
+                `Applied by: ${context.username || "unknown user"}`,
+             ...createEmbedFooter(),
+            },
+          ],
+        });
+      }
 
       // Add to Mod Log (disabled - requires privileged permissions)
       // try {
