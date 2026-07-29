@@ -48,7 +48,10 @@ const RestrictPostToFlairedUsers: MenuItem = {
       });
 
       // log mod action to webhook
-      await SendContentToWebhook(RESTRICTED_FLAIR_WEBHOOK, {
+      const discordWebhookUrl = (await context.settings.get(
+        RESTRICTED_FLAIR_WEBHOOK,
+      )) as string;
+      await SendContentToWebhook(discordWebhookUrl, {
         content: `https://reddit.com${post.permalink}`,
         embeds: [
           {

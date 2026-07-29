@@ -5,6 +5,7 @@ import Settings, {
   Icons,
   MODMAIL_REPORT_WEBHOOK,
   POST_REPORT_WEBHOOK,
+  RESTRICTED_FLAIR_WEBHOOK,
 } from "./settings.js";
 
 describe("settings.ts", () => {
@@ -23,12 +24,13 @@ describe("settings.ts", () => {
       expect(POST_REPORT_WEBHOOK).toBe("postReportWebhookURL");
       expect(COMMENT_REPORT_WEBHOOK).toBe("commentReportWebhookURL");
       expect(MODMAIL_REPORT_WEBHOOK).toBe("modmailWebhookURL");
+      expect(RESTRICTED_FLAIR_WEBHOOK).toBe("restrictedFlairWebhookURL");
     });
   });
 
   describe("Settings array", () => {
     it("should contain all webhook settings", () => {
-      expect(Settings).toHaveLength(3);
+      expect(Settings).toHaveLength(4);
 
       const settingNames = Settings.map((setting) => (setting as any).name);
       expect(settingNames).toContain(POST_REPORT_WEBHOOK);
@@ -58,10 +60,14 @@ describe("settings.ts", () => {
       const modmailSetting = Settings.find(
         (s) => (s as any).name === MODMAIL_REPORT_WEBHOOK,
       ) as any;
+      const restrictedFlairSetting = Settings.find(
+        (s) => (s as any).name === RESTRICTED_FLAIR_WEBHOOK,
+      ) as any;
 
       expect(postReportSetting?.label).toBe("post reports webhook URL");
       expect(commentReportSetting?.label).toBe("comment reports webhook URL");
       expect(modmailSetting?.label).toBe("new modmail webhook URL");
+      expect(restrictedFlairSetting?.label).toBe("restricted flair webhook URL");
     });
   });
 });
