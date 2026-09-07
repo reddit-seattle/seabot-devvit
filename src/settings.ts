@@ -74,6 +74,12 @@ export const REMOVAL_MENU_CONFIGS: RemovalMenuConfig[] = [
     rulePattern: "be good|rule 1",
   },
   {
+    label: "Remove: Low-Effort Content",
+    description: "Rule 4: No low-effort content",
+    location: "post",
+    rulePattern: "low-effort|low effort|rule 4",
+  },
+  {
     label: "Remove: Not Seattle-Related",
     description: "Rule 2: Must be Seattle-related",
     location: "post",
@@ -85,6 +91,7 @@ const DISCORD_WEBHOOK_SUFFIX = "webhook URL";
 export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
 export const COMMENT_REPORT_WEBHOOK = "commentReportWebhookURL";
 export const MODMAIL_REPORT_WEBHOOK = "modmailWebhookURL";
+export const RESTRICTED_FLAIR_WEBHOOK = "restrictedFlairWebhookURL";
 
 const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
@@ -98,6 +105,10 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
     name: MODMAIL_REPORT_WEBHOOK,
     label: `new modmail ${DISCORD_WEBHOOK_SUFFIX}`,
+  },
+  {
+    name: RESTRICTED_FLAIR_WEBHOOK,
+    label: `restricted flair ${DISCORD_WEBHOOK_SUFFIX}`,
   },
 ];
 

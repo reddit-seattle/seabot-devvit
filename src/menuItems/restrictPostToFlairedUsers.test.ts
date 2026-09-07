@@ -24,6 +24,9 @@ const mockContext = {
     showToast: vi.fn(),
   },
   subredditName: "testsubreddit",
+  settings: {
+    get: vi.fn().mockResolvedValue("https://discord.com/webhook"),
+  },
 } as unknown as Context;
 
 const mockEvent = {

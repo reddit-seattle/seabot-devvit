@@ -5,7 +5,7 @@ describe("menuItems index", () => {
   it("should export all menu items", () => {
     expect(menuItems).toBeDefined();
     expect(Array.isArray(menuItems)).toBe(true);
-    expect(menuItems).toHaveLength(5);
+    expect(menuItems).toHaveLength(6);
 
     // Verify each menu item has the required properties
     menuItems.forEach((item) => {

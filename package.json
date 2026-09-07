@@ -11,7 +11,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@devvit/public-api": "0.12.20",
+    "@devvit/public-api": "0.14.2",
     "dotenv": "^16.3.2"
   },
   "devDependencies": {
