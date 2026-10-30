@@ -4,6 +4,8 @@ SeaBot assesses new r/Seattle comments for potential campaign participation. It 
 
 This feature only submits reports. It does not remove, filter, ban, lock, or message users, and makes no external-service or LLM calls. Existing SeaBot features continue to operate independently.
 
+For the 2026-10-30 investigation of 24 supplied suspects and 26 Chrome-selected comparison contributors, see [research findings and the revised proposal](BotTriageResearch.md). The proposed behavioral assessment and expanded name diagnostic are follow-up work, not settings or scoring changes implemented here. Reports should remain disabled pending calibration and the live SDK playtest.
+
 ## Settings
 
 All settings belong to the subreddit installation. Reports start disabled (shadow mode).
