@@ -1,4 +1,5 @@
 import type {
+  Comment,
   CommentCreateDefinition,
   CommentDeleteDefinition,
   TriggerContext,
@@ -7,13 +8,14 @@ import {
   assessAccount,
   compactReportReason,
   evaluationSignature,
-  HISTORY_LIMIT,
   LOCAL_SUBREDDIT,
   shouldReport,
   type Assessment,
   type HistoryItem,
+  type ReportOptions,
 } from "../botTriage/scoring.js";
 import { readTriageSettings } from "../botTriage/settings.js";
+import { getRecentHistory } from "../botTriage/history.js";
 
 const DAY_MS = 86_400_000;
 const CASE_RETENTION_MS = 14 * DAY_MS;
@@ -32,6 +34,53 @@ interface CaseRecord {
     | "cooldown"
     | "suppressed_daily_cap"
     | "report_failed";
+}
+
+async function reportComment(
+  comment: Comment,
+  assessment: Assessment,
+  options: ReportOptions,
+  { redis, reddit }: TriggerContext,
+): Promise<CaseRecord["action"] | undefined> {
+  if (!shouldReport(assessment, options)) return "evaluated";
+  const claimKey = `seabot:triage:report:${comment.authorName.toLowerCase()}`;
+  if (await redis.get(claimKey)) return "cooldown";
+  if (options.dailyReportCap === 0) return "suppressed_daily_cap";
+
+  const day = new Date().toISOString().slice(0, 10);
+  const budgetKey = `seabot:triage:daily:${day}`;
+  await redis.set(budgetKey, "0", {
+    nx: true,
+    expiration: expiresIn(2 * DAY_MS),
+  });
+  const attempt = await redis.incrBy(budgetKey, 1);
+  let reportAttempted = false;
+  try {
+    if (attempt > options.dailyReportCap) return "suppressed_daily_cap";
+    // Finish cancellation checks before taking the seven-day report claim.
+    if (await redis.get(caseKey(comment.id))) return;
+    const reason = compactReportReason(assessment);
+    if (
+      (await redis.set(claimKey, "1", {
+        nx: true,
+        expiration: expiresIn(REPORT_COOLDOWN_MS),
+      })) !== "OK"
+    )
+      return "cooldown";
+
+    reportAttempted = true;
+    try {
+      await reddit.report(comment, { reason });
+      return "reported";
+    } catch {
+      // Reddit may have accepted a report whose response was lost. Keep both reservations.
+      console.error("SeaBot triage: report failed; cooldown retained");
+      return "report_failed";
+    }
+  } finally {
+    // Only requests sent to Reddit consume budget; definite skips/errors release their slot.
+    if (!reportAttempted) await redis.incrBy(budgetKey, -1);
+  }
 }
 
 async function evaluateComment(
@@ -84,17 +133,7 @@ async function evaluateComment(
   let historyAvailable = true;
   let history: HistoryItem[] = [];
   try {
-    const listing = await reddit
-      .getCommentsAndPostsByUser({
-        username,
-        sort: "new",
-        limit: HISTORY_LIMIT,
-      })
-      .get(HISTORY_LIMIT);
-    history = listing.map((item) => ({
-      id: item.id,
-      subreddit: item.subredditName,
-    }));
+    history = await getRecentHistory(reddit, username);
   } catch {
     historyAvailable = false;
     // A later comment can retry sooner after a transient history failure.
@@ -110,54 +149,14 @@ async function evaluateComment(
     nowMs: Date.now(),
     config,
   });
+  const action = await reportComment(comment, assessment, options, context);
+  if (action === undefined) return;
   const record: CaseRecord = {
     commentId,
     assessedAt: new Date().toISOString(),
     assessment,
-    action: "evaluated",
+    action,
   };
-  if (await redis.get(caseKey(commentId))) return;
-
-  if (shouldReport(assessment, options)) {
-    const claimKey = `seabot:triage:report:${userKey}`;
-    if (await redis.get(claimKey)) {
-      record.action = "cooldown";
-    } else if (options.dailyReportCap === 0) {
-      record.action = "suppressed_daily_cap";
-    } else {
-      const day = new Date().toISOString().slice(0, 10);
-      const budgetKey = `seabot:triage:daily:${day}`;
-      // Initialize with a TTL atomically; failures/races may spend a slot, never exceed the cap.
-      await redis.set(budgetKey, "0", {
-        nx: true,
-        expiration: expiresIn(2 * DAY_MS),
-      });
-      const attempt = await redis.incrBy(budgetKey, 1);
-      if (attempt > options.dailyReportCap) {
-        record.action = "suppressed_daily_cap";
-      } else if (
-        (await redis.set(claimKey, "1", {
-          nx: true,
-          expiration: expiresIn(REPORT_COOLDOWN_MS),
-        })) !== "OK"
-      ) {
-        record.action = "cooldown";
-      } else {
-        // Deletion can arrive while the budget/cooldown calls are in flight.
-        if (await redis.get(caseKey(commentId))) return;
-        try {
-          await reddit.report(comment, {
-            reason: compactReportReason(assessment),
-          });
-          record.action = "reported";
-        } catch {
-          // Keep the claim: Reddit may have accepted a report whose response was lost.
-          record.action = "report_failed";
-          console.error("SeaBot triage: report failed; cooldown retained");
-        }
-      }
-    }
-  }
 
   // One final write cannot overwrite a deletion that arrived during evaluation/reporting.
   const saved = await redis.set(caseKey(commentId), JSON.stringify(record), {

@@ -56,20 +56,23 @@ HIGH = 11–13, MEDIUM = 7–10, LOW = 0–6. A single match on a 100-day-old ac
 - Scope is fixed to `LOCAL_SUBREDDIT` (`seattle`). Removed, spam, approved, deleted-author, AutoModerator, moderator-team, and app-authored comments are skipped.
 - Atomic Redis `SET NX` throttles each author's evaluations for 15 minutes. The signature includes campaigns, tier switches, report enablement, and the cap. Changes apply to subsequent comments immediately, without resetting report cooldowns. Completed comments are not reprocessed.
 - A separate atomic claim allows at most one report attempt per author in seven days. Report errors retain the claim because Reddit may have accepted the request before its response was lost.
-- The daily counter conservatively reserves report attempts. Concurrent claims or failed requests may consume budget without producing a report. The cap bounds submissions, not guaranteed delivered reports. Denied budget reservations do not claim a user cooldown.
+- The daily counter reserves report attempts. Definite skips (cap reached, another evaluation won the cooldown, or deletion before reporting) release their reservation, so raising the cap makes the extra capacity available. The final deletion check runs before claiming the seven-day cooldown. Failed report requests retain both reservations because their outcome can be ambiguous. Redis failures may conservatively leave reservations held. The cap bounds submissions, not guaranteed delivered reports.
 - History failures produce `history_unavailable`, suppress reporting, and shorten the evaluation throttle to two minutes for later comments. A 100-item sample is marked `sample_limit_reached`, never described as complete account history.
+- The pinned SDK omits `sort: "new"` from the outgoing overview request. The history helper checks returned timestamps and treats out-of-order or invalid dates as `history_unavailable`; it never re-sorts an arbitrary sample to make it appear recent. Tests exercise the actual installed SDK with only its RPC transport mocked. This checks request construction and response handling; it cannot establish the live endpoint's selection of the most recent 100 visible items. Verify that selection during playtesting. No SDK upgrade or custom Reddit client is added.
 - Report reasons include the tier, score, campaign, and observed matches, truncated to at most 100 characters.
 
 Redis is scoped to the installation. Keys are prefixed with `seabot:triage:`:
 
-| Key suffix                               | Data                                                                                                       | Retention                                |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `case:<commentId>`                       | Comment ID, assessment time, score, reason codes, matched names/counts, sample quality, and report outcome | 14 days                                  |
-| `recent:<signature>:<lowercaseUsername>` | Evaluation claim only                                                                                      | 15 minutes; 2 minutes on history failure |
-| `report:<lowercaseUsername>`             | Report claim only                                                                                          | 7 days                                   |
-| `daily:<YYYY-MM-DD>`                     | Reserved report attempts                                                                                   | 2 days                                   |
+| Key suffix                               | Data                                                                                                                                      | Retention                                |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `case:<commentId>`                       | Comment ID, assessment time, score/tier, winning campaign and matches, reason codes, age/name signals, sample quality, and report outcome | 14 days                                  |
+| `recent:<signature>:<lowercaseUsername>` | Evaluation claim only                                                                                                                     | 15 minutes; 2 minutes on history failure |
+| `report:<lowercaseUsername>`             | Report claim only                                                                                                                         | 7 days                                   |
+| `daily:<YYYY-MM-DD>`                     | Reserved report attempts                                                                                                                  | 2 days                                   |
 
 Cases contain no username, permalink, copied comment/post text, or history item IDs. On `CommentDelete`, the diagnostic is replaced with an expiring `deleted` marker containing no assessment. The marker prevents delayed/in-flight create handlers from recreating the diagnostic. Storage errors on deletion propagate for retry. A report already sent to Reddit cannot be recalled by this handler.
+
+Only the winning campaign's matches are retained. Match counts come from the array length; the score maximum stays in the rubric constant. Per-campaign duplicates and generated signal descriptions are not stored.
 
 Each saved assessment emits a `SeaBot triage` log entry with tier, score, data quality, and action. These entries provide shadow-mode counts and tier distributions without logging account identifiers or cross-subreddit evidence. Counts reflect throttled evaluations, not unique users over the entire rollout. No dashboard or feedback database is introduced.
 
@@ -77,7 +80,7 @@ The deletion handler and TTLs address local comment cases and bounded retention.
 
 ## Validation and rollout
 
-1. Run `npm ci`, `npm run test:run`, and `npx tsc --noEmit`. Tests cover scoring boundaries, configuration validation, routing, concurrent evaluation/report claims, daily budgets, history/report failures, and deletion ordering.
+1. Run `npm ci`, `npm run test:run`, and `npx tsc --noEmit`. Tests cover scoring boundaries, configuration validation, routing, concurrent evaluation/report claims, cap increases after denied reservations, pre-report Redis failures, real-SDK history conversion/order checks, report failures, and deletion ordering.
 2. Use a private playtest installation. For that test build only, change `LOCAL_SUBREDDIT` in `src/botTriage/scoring.ts` to the private subreddit. Restore `seattle` before preparing a production build. Start with reports disabled.
 3. Compare known campaign accounts with a random group of legitimate users, keeping uncertain cases separate. Check shadow-mode distributions and inspect sampled matches. The bundled rubric has not been calibrated on a labeled account set by these unit tests.
 4. Before enabling HIGH reports, inspect AutoModerator `reports:` rules and other report-driven automation so triage reports do not incidentally remove content. Existing SeaBot Discord report notifications can also react to reports; review that integration's destination and privacy handling.

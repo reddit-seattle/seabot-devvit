@@ -55,6 +55,7 @@ function setup() {
       id: `t1_history${i}`,
       subredditName,
       body: "EXTERNAL COMMENT BODY",
+      createdAt: new Date(NOW - i * 1000),
     }),
   );
   const listingGet = vi.fn(async (_limit: number) => history);
@@ -229,7 +230,7 @@ describe("comment bot triage", () => {
     });
     await env.create("t1_third");
     expect(env.listingGet).toHaveBeenCalledTimes(3);
-    expect(env.record("t1_third").assessment.primaryMatches).toEqual([]);
+    expect(env.record("t1_third").assessment.campaign).toBeNull();
   });
 
   it("keeps the seven-day report cooldown across configuration changes", async () => {
@@ -260,6 +261,7 @@ describe("comment bot triage", () => {
     expect(
       [env.record().action, env.record("t1_second").action].sort(),
     ).toEqual(["cooldown", "reported"]);
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBe("1");
   });
 
   it("caps concurrent reports across users and resets the budget on a new UTC day", async () => {
@@ -276,6 +278,7 @@ describe("comment bot triage", () => {
       Array.from({ length: 10 }, (_, i) => env.create(`t1_${1000 + i}`)),
     );
     expect(env.reddit.report).toHaveBeenCalledTimes(2);
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBe("2");
     expect(
       [...env.data.values()].filter(({ value }) =>
         value.includes('"suppressed_daily_cap"'),
@@ -301,6 +304,50 @@ describe("comment bot triage", () => {
       env.read(`${PREFIX}report:${username.toLowerCase()}`),
     ).toBeUndefined();
     expect(env.redis.incrBy).not.toHaveBeenCalled();
+  });
+
+  it("honors an increased cap after previous evaluations were rejected", async () => {
+    Object.assign(env.values, {
+      botTriageReportsEnabled: true,
+      botTriageDailyReportCap: 1,
+    });
+    env.reddit.getCommentById.mockImplementation(async (id) => ({
+      ...env.comment,
+      id,
+      authorName: `Silly_Banana_${id.slice(3)}`,
+    }));
+    for (let i = 1000; i < 1005; i++) await env.create(`t1_${i}`);
+    expect(env.reddit.report).toHaveBeenCalledOnce();
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBe("1");
+    env.values.botTriageDailyReportCap = 2;
+    await env.create("t1_2000");
+    expect(env.reddit.report).toHaveBeenCalledTimes(2);
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBe("2");
+  });
+
+  it("releases budget without starting a cooldown when the final case read fails", async () => {
+    env.values.botTriageReportsEnabled = true;
+    let failRead = true;
+    env.redis.get.mockImplementation(async (key) => {
+      if (
+        failRead &&
+        key === `${PREFIX}case:t1_first` &&
+        env.read(`${PREFIX}daily:2026-10-30`) === "1"
+      ) {
+        failRead = false;
+        throw new Error("temporary Redis failure");
+      }
+      return env.read(key);
+    });
+    await env.create();
+    expect(env.reddit.report).not.toHaveBeenCalled();
+    expect(
+      env.read(`${PREFIX}report:${username.toLowerCase()}`),
+    ).toBeUndefined();
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBe("0");
+    vi.setSystemTime(NOW + 16 * 60_000);
+    await env.create("t1_later");
+    expect(env.reddit.report).toHaveBeenCalledOnce();
   });
 
   it("retains cooldown and budget after an ambiguous report failure", async () => {
@@ -363,6 +410,7 @@ describe("comment bot triage", () => {
         id: `t1_${i}`,
         subredditName: "pcos",
         body: "body",
+        createdAt: new Date(NOW - i * 1000),
       })),
     );
     await env.create();
@@ -399,7 +447,14 @@ describe("comment bot triage", () => {
     env.values.botTriageReportsEnabled = true;
     env.listingGet.mockImplementationOnce(async () => {
       await env.remove();
-      return [{ id: "t1_history", subredditName: "pcos", body: "body" }];
+      return [
+        {
+          id: "t1_history",
+          subredditName: "pcos",
+          body: "body",
+          createdAt: new Date(NOW),
+        },
+      ];
     });
     env.values.botTriageReportMedium = true;
     await env.create();
@@ -418,13 +473,35 @@ describe("comment bot triage", () => {
 
   it("suppresses a report when deletion arrives during budget reservation", async () => {
     env.values.botTriageReportsEnabled = true;
-    env.redis.incrBy.mockImplementationOnce(async () => {
+    const increment = env.redis.incrBy.getMockImplementation()!;
+    env.redis.incrBy.mockImplementationOnce(async (key, amount) => {
+      const result = await increment(key, amount);
       await env.remove();
-      return 1;
+      return result;
     });
     await env.create();
     expect(env.reddit.report).not.toHaveBeenCalled();
     expect(env.read(`${PREFIX}case:t1_first`)).toBe("deleted");
+    expect(
+      env.read(`${PREFIX}report:${username.toLowerCase()}`),
+    ).toBeUndefined();
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBe("0");
+  });
+
+  it("suppresses reporting when history is not newest-first", async () => {
+    Object.assign(env.values, {
+      botTriageReportsEnabled: true,
+      botTriageReportMedium: true,
+      botTriageReportLow: true,
+    });
+    const ordered = await env.listingGet(100);
+    env.listingGet.mockResolvedValue([...ordered].reverse());
+    await env.create();
+    expect(env.record().assessment).toMatchObject({
+      dataQuality: "history_unavailable",
+      observedItems: 0,
+    });
+    expect(env.reddit.report).not.toHaveBeenCalled();
   });
 
   it("propagates deletion storage failures for retry", async () => {
