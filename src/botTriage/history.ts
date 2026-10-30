@@ -4,6 +4,7 @@ import { HISTORY_LIMIT, type HistoryItem } from "./scoring.js";
 export async function getRecentHistory(
   reddit: TriggerContext["reddit"],
   username: string,
+  nowMs = Date.now(),
 ): Promise<HistoryItem[]> {
   const items = await reddit
     .getCommentsAndPostsByUser({
@@ -18,10 +19,26 @@ export async function getRecentHistory(
   let previousTime = Infinity;
   return items.map((item) => {
     const time = item.createdAt.getTime();
-    if (!Number.isFinite(time) || time <= 0 || time > previousTime) {
+    if (
+      !Number.isFinite(time) ||
+      time <= 0 ||
+      time > nowMs ||
+      time > previousTime
+    ) {
       throw new Error("Account history is not newest-first");
     }
     previousTime = time;
-    return { id: item.id, subreddit: item.subredditName };
+    const kind = item.id.startsWith("t1_")
+      ? "comment"
+      : item.id.startsWith("t3_")
+        ? "post"
+        : null;
+    if (!kind) throw new Error("Unknown account history item type");
+    return {
+      id: item.id,
+      subreddit: item.subredditName,
+      createdAtMs: time,
+      kind,
+    };
   });
 }

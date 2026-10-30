@@ -16,6 +16,11 @@ import {
 } from "../botTriage/scoring.js";
 import { readTriageSettings } from "../botTriage/settings.js";
 import { getRecentHistory } from "../botTriage/history.js";
+import {
+  assessBehavior,
+  assessExpandedName,
+  type BehaviorAssessment,
+} from "../botTriage/behavior.js";
 
 const DAY_MS = 86_400_000;
 const CASE_RETENTION_MS = 14 * DAY_MS;
@@ -28,6 +33,8 @@ interface CaseRecord {
   commentId: string;
   assessedAt: string;
   assessment: Assessment;
+  behaviorShadow: BehaviorAssessment;
+  nameShadow: ReturnType<typeof assessExpandedName>;
   action:
     | "evaluated"
     | "reported"
@@ -132,8 +139,21 @@ async function evaluateComment(
   }
   let historyAvailable = true;
   let history: HistoryItem[] = [];
+  const evaluatedAtMs = Date.now();
+  const trigger: HistoryItem = {
+    id: comment.id,
+    subreddit: comment.subredditName,
+    kind: "comment",
+    createdAtMs: comment.createdAt?.getTime() ?? NaN,
+  };
   try {
-    history = await getRecentHistory(reddit, username);
+    if (
+      !Number.isFinite(trigger.createdAtMs) ||
+      trigger.createdAtMs <= 0 ||
+      trigger.createdAtMs > evaluatedAtMs
+    )
+      throw new Error("Invalid trigger timestamp");
+    history = await getRecentHistory(reddit, username, evaluatedAtMs);
   } catch {
     historyAvailable = false;
     // A later comment can retry sooner after a transient history failure.
@@ -146,15 +166,24 @@ async function evaluateComment(
     createdAtMs,
     historyAvailable,
     history,
-    nowMs: Date.now(),
+    nowMs: evaluatedAtMs,
     config,
   });
+  const behaviorShadow = assessBehavior({
+    history,
+    historyAvailable,
+    trigger,
+    evaluatedAtMs,
+  });
+  const nameShadow = assessExpandedName(username, assessment);
   const action = await reportComment(comment, assessment, options, context);
   if (action === undefined) return;
   const record: CaseRecord = {
     commentId,
-    assessedAt: new Date().toISOString(),
+    assessedAt: new Date(evaluatedAtMs).toISOString(),
     assessment,
+    behaviorShadow,
+    nameShadow,
     action,
   };
 
@@ -171,6 +200,9 @@ async function evaluateComment(
         tier: assessment.tier,
         score: assessment.score,
         dataQuality: assessment.dataQuality,
+        behaviorMatched: behaviorShadow.matched,
+        behaviorDataQuality: behaviorShadow.dataQuality,
+        expandedNameScore: nameShadow.score,
         action: record.action,
       }),
     );

@@ -33,7 +33,12 @@ function assess(
     nowMs: NOW,
     historyAvailable,
     config,
-    history: subs.map((subreddit, i) => ({ id: `t1_${i}`, subreddit })),
+    history: subs.map((subreddit, i) => ({
+      id: `t1_${i}`,
+      subreddit,
+      createdAtMs: NOW - i * 1000,
+      kind: "comment",
+    })),
   });
 }
 
@@ -96,6 +101,8 @@ describe("campaign scoring", () => {
     const history = Array.from({ length: 100 }, () => ({
       id: "t1_same",
       subreddit: "pcos",
+      createdAtMs: NOW,
+      kind: "comment" as const,
     }));
     expect(
       assessAccount({
@@ -311,6 +318,7 @@ describe("report routing", () => {
 
   it("keeps only the winning campaign and reason codes in the assessment", () => {
     expect(high).toEqual({
+      rubricVersion: "campaign-overlap-v1",
       score: 13,
       tier: "HIGH",
       campaign: {

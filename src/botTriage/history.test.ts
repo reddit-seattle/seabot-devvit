@@ -34,6 +34,8 @@ describe("history through the installed Devvit SDK", () => {
   )!;
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW * 1000);
     userWhere.mockClear();
     // Mock only the RPC transport, preserving the SDK's request construction and model conversion.
     Object.defineProperty(Devvit, "redditAPIPlugins", {
@@ -41,14 +43,25 @@ describe("history through the installed Devvit SDK", () => {
       get: () => ({ Users: { UserWhere: userWhere } }),
     });
   });
-  afterEach(() =>
-    Object.defineProperty(Devvit, "redditAPIPlugins", pluginDescriptor),
-  );
+  afterEach(() => {
+    vi.useRealTimers();
+    Object.defineProperty(Devvit, "redditAPIPlugins", pluginDescriptor);
+  });
 
   it("returns minimal evidence from newest-first comments and posts", async () => {
     expect(await getRecentHistory(client, "example")).toEqual([
-      { id: "t1_1", subreddit: "pcos" },
-      { id: "t3_2", subreddit: "nashville" },
+      {
+        id: "t1_1",
+        subreddit: "pcos",
+        createdAtMs: (NOW - 1) * 1000,
+        kind: "comment",
+      },
+      {
+        id: "t3_2",
+        subreddit: "nashville",
+        createdAtMs: (NOW - 2) * 1000,
+        kind: "post",
+      },
     ]);
     expect(userWhere).toHaveBeenCalledOnce();
     expect(userWhere.mock.calls[0][0]).toMatchObject({
@@ -81,7 +94,7 @@ describe("history through the installed Devvit SDK", () => {
     expect(userWhere.mock.calls[0][0]).not.toHaveProperty("sort");
   });
 
-  it.each([0, NaN])(
+  it.each([0, NaN, NOW + 1])(
     "rejects an invalid history timestamp: %s",
     async (time) => {
       userWhere.mockResolvedValueOnce({

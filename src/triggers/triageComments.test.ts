@@ -44,6 +44,7 @@ function setup() {
     id: "t1_first",
     subredditName: "Seattle",
     authorName: username,
+    createdAt: new Date(NOW),
     removed: false,
     spam: false,
     approved: false,
@@ -153,6 +154,9 @@ describe("comment bot triage", () => {
         tier: "HIGH",
         score: 13,
         dataQuality: "sampled",
+        behaviorMatched: false,
+        behaviorDataQuality: "sampled",
+        expandedNameScore: 13,
         action: "evaluated",
       }),
     );
@@ -167,6 +171,87 @@ describe("comment bot triage", () => {
     expect(env.listingGet).toHaveBeenCalledOnce();
     expect(env.record().assessment).toMatchObject({ score: 9, tier: "MEDIUM" });
   });
+
+  it("includes the eligible trigger in behavioral evidence without allowing shadow matches to report", async () => {
+    env.comment.authorName = "CustomName";
+    env.values.botTriageReportsEnabled = true;
+    env.reddit.getUserByUsername.mockResolvedValue({
+      createdAt: new Date(NOW - 900 * DAY_MS),
+    });
+    env.listingGet.mockResolvedValue(
+      [
+        ["pcos", NOW - 60_000],
+        ["nashville", NOW - DAY_MS + 120_000],
+        ["pcos", NOW - DAY_MS + 60_000],
+        ["seattle", NOW - DAY_MS],
+        ["elsewhere", NOW - 2 * DAY_MS],
+      ].map(([subredditName, at], i) => ({
+        id: `t1_evidence${i}`,
+        subredditName: String(subredditName),
+        createdAt: new Date(Number(at)),
+        body: "EXTERNAL COMMENT BODY",
+      })),
+    );
+    await env.create();
+    expect(env.record()).toMatchObject({
+      assessedAt: new Date(NOW).toISOString(),
+      assessment: {
+        score: 7,
+        tier: "MEDIUM",
+        rubricVersion: "campaign-overlap-v1",
+      },
+      behaviorShadow: {
+        matched: true,
+        recentComments: 6,
+        b5Dates: 2,
+        triggerAtMs: NOW,
+        oldestSampleAtMs: NOW - 2 * DAY_MS,
+        dataQuality: "sampled",
+      },
+      action: "evaluated",
+    });
+    expect(env.reddit.report).not.toHaveBeenCalled();
+    expect(env.read(`${PREFIX}report:customname`)).toBeUndefined();
+    expect(env.read(`${PREFIX}daily:2026-10-30`)).toBeUndefined();
+    expect(env.read(`${PREFIX}case:t1_first`)).not.toContain("t1_evidence");
+  });
+
+  it("keeps a CamelCase-only HIGH score separate from report eligibility", async () => {
+    env.comment.authorName = "InitialLess9326";
+    env.values.botTriageReportsEnabled = true;
+    env.reddit.getUserByUsername.mockResolvedValue({
+      createdAt: new Date(NOW - 250 * DAY_MS),
+    });
+    await env.create();
+    expect(env.record()).toMatchObject({
+      assessment: { score: 10, tier: "MEDIUM" },
+      nameShadow: {
+        rubricVersion: "camelcase-name-v1",
+        matches: true,
+        score: 11,
+      },
+    });
+    expect(env.reddit.report).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, new Date(NaN), new Date(0), new Date(NOW + 1)])(
+    "suppresses both assessments and reporting for invalid trigger time %s",
+    async (createdAt) => {
+      Object.assign(env.comment, { createdAt });
+      env.values.botTriageReportsEnabled = true;
+      await env.create();
+      expect(env.record()).toMatchObject({
+        assessment: { dataQuality: "history_unavailable" },
+        behaviorShadow: {
+          matched: false,
+          dataQuality: "history_unavailable",
+          triggerAtMs: null,
+        },
+      });
+      expect(env.reddit.report).not.toHaveBeenCalled();
+      expect(env.listingGet).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(["removed", "spam", "approved"] as const)(
     "skips %s comments",

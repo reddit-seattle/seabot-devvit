@@ -13,6 +13,8 @@ export type DataQuality =
 export interface HistoryItem {
   id: string;
   subreddit: string;
+  createdAtMs: number;
+  kind: "comment" | "post";
 }
 export interface Campaign {
   id: string;
@@ -30,6 +32,7 @@ export interface ReportOptions {
   dailyReportCap: number;
 }
 export interface Assessment {
+  rubricVersion: "campaign-overlap-v1";
   score: number;
   tier: Tier;
   reasons: string[];
@@ -232,6 +235,7 @@ export function assessAccount(input: {
         ? "MEDIUM"
         : "LOW";
   return {
+    rubricVersion: "campaign-overlap-v1",
     score,
     tier,
     reasons,
