@@ -84,6 +84,23 @@ A separate replay evaluates the same rule at each network-like account's **last 
 
 This directly informs implementation: merge the currently fetched, eligible Seattle comment into the behavioral history by ID before enforcing the combined limit, and keep its validated creation time. Never double-count it or use later activity in an event-time replay. The three event-time non-matches with the current comment included are Mission-Employee933, Hot_Reaction_7754, and Fit-Eye-2693; retain them as timing/coverage limitations rather than inventing a broader campaign to catch them.
 
+## Later follow-up: Honest_Necessary5366
+
+The 25th supplied account, [Honest_Necessary5366](https://www.reddit.com/user/Honest_Necessary5366/), was checked in Chrome and Arctic Shift at a separate **2026-10-30 22:43:19 UTC** cutoff. It is recorded as **possible sparse overlap, with network membership unresolved**, outside the frozen 18-account analytical cohort. It is neither a confirmed network member nor a confirmed negative. The original cohort counts and thresholds are unchanged. See the [follow-up ledger](research/bot-triage-followups.json).
+
+Chrome shows a December 31, 2025 creation date (303 days old) and the existing separated-word-plus-digits username shape. Arctic Shift returned 40 comments and no posts, with history in PCOS (one comment), Testosterone (two), SideProject (six), and Supplements (two). Those matching archived comments are older than the 30-day behavioral window; the latest Testosterone comment is August 23. No new campaign subreddit is established by this example.
+
+The live profile shows a [Nashville comment](https://www.reddit.com/r/nashville/comments/1xjqi33/comment/19rwar4oeuu9u/) at 20:37:26.489 UTC followed by a [Seattle comment](https://www.reddit.com/r/Seattle/comments/1xjq9cp/comment/19rwatgy3saqp/) at 20:38:53.957 UTC on October 30: **87.468 seconds apart**. An older Seattle comment on October 5 brings observed recent activity to three comments on two Pacific dates. Both October 30 comments are absent from this archive response and were posted after the original study's 20:25:32 cutoff. Live evidence is therefore kept separate from the frozen archive replay.
+
+| Evaluation | Recent comments N | Recent core communities K | B5 dates | Behavioral match | Baseline score |
+| --- | ---: | ---: | ---: | --- | --- |
+| Archive only | 1 | 0 | 0 | No | 11 / HIGH |
+| Archive plus two Chrome-verified comments | 3 | 1 (Nashville) | 1 | No | 11 / HIGH |
+
+The actual TypeScript implementation at `5edc8d2` reproduces these results. The live-augmented result also fails at the latest Seattle trigger's timestamp. Adding only the trigger to the archived history gives N=2, K=0, B5=0; merging the current comment cannot recover a missing comment from another subreddit. Query exhaustion and the UI's contribution counter do not establish complete history.
+
+**Implementation implication:** retain this as an unresolved sparse case and leave the network conjunction unchanged. All three requirements are unmet even after incorporating the verified live pair. The baseline's HIGH result comes from older campaign overlap plus age/name points, not a repeated recent network pattern. If independent moderation evidence later ties this account to the network, count it as a behavioral coverage miss; do not redefine membership or relax thresholds to hide it. This is a scoring replay, not a claim that a live trigger would report an already moderated comment. No moderation action, settings change, deployment, or detector-code change was made for this follow-up.
+
 ## Proposed Devvit implementation
 
 **Implementation status:** the independent `behaviorShadow` and `nameShadow` assessments are now implemented. The baseline has an explicit rubric version. The adapter carries timestamps and content type; the behavioral sample merges the eligible trigger, deduplicates, excludes later activity, and remains bounded at 100. Compact aggregates and uncertainty remain under the existing case retention/deletion safeguards. Neither shadow assessment can authorize a report.
