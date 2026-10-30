@@ -1,5 +1,6 @@
 import { Context, SettingScope, SettingsFormField } from "@devvit/public-api";
 import { createResubmissionLink } from "./utils/reddithelpers.js";
+import { botTriageSettings } from "./botTriage/settings.js";
 
 export const RESTRICTED_FLAIR_TEXT = "Market Traffic Only";
 export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - New comments by users without an equipped r/Seattle flair will be automatically removed.
@@ -102,6 +103,7 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
 ];
 
 const Settings: SettingsFormField[] = [
+  ...botTriageSettings,
   // Discord webhook settings
   ...DISCORD_WEBHOOK_SETTINGS.map(({ name, label }) => ({
     type: "string" as const,

@@ -4,6 +4,8 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  TriageComment,
+  DeleteTriageCase,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -34,6 +36,8 @@ vi.mock("./triggers/index.js", () => ({
     onEvent: vi.fn(),
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
+  TriageComment: { event: "CommentCreate", onEvent: vi.fn() },
+  DeleteTriageCase: { event: "CommentDelete", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -54,6 +58,7 @@ describe("main.ts", () => {
 
     expect(mockDevvit.configure).toHaveBeenCalledWith({
       redditAPI: true,
+      redis: true,
       http: {
         domains: [
           "https://api-web.nhle.com",
@@ -73,13 +78,15 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(4);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
       AddCommentToRestrictedFlairPost,
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(TriageComment);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(DeleteTriageCase);
   });
 
   it("should register all menu items dynamically", async () => {

@@ -24,6 +24,12 @@ Provides the ability to notify discord webhooks with embeds for:
 ### Bulk Actions
 - Comment nuke - Remove all comments in a single thread
 
+### Bot Campaign Triage
+- Assesses recent commenters in r/Seattle using campaign subreddit overlap, account age, and username shape
+- Starts in shadow mode; optional reports go to moderators for review
+- Includes per-user cooldowns, a daily report cap, and expiring diagnostics
+- See [Bot Triage Setup](./docs/BotTriageSetup.md) for the rubric, settings, and rollout checks
+
 ## Configuration
 
 ### Removal Menu Items

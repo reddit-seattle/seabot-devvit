@@ -6,9 +6,12 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  TriageComment,
+  DeleteTriageCase,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
+  redis: true,
   http: {
     // You can ignore this. These endpoints are not used currently...
     domains: [
@@ -27,6 +30,8 @@ Devvit.addTrigger(LogCommentReports);
 Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
+Devvit.addTrigger(TriageComment);
+Devvit.addTrigger(DeleteTriageCase);
 
 /**
  * Register all menu items
