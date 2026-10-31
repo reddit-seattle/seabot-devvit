@@ -1,105 +1,23 @@
-# Bot campaign triage
+# Bot network detection
 
-SeaBot assesses new r/Seattle comments for potential campaign participation. It samples up to 100 visible recent comments and posts from each eligible author. The baseline scores campaign subreddit overlap, account age, and username shape; separate shadow assessments measure the researched network behavior and expanded name shape. Scores and matches are review priorities, not probabilities or proof of automation. Participation in a listed subreddit alone does not establish wrongdoing.
+SeaBot reports eligible r/Seattle comments to the moderator queue when the author's sampled history meets all three conditions in the preceding 30 days:
 
-This feature only submits reports. It does not remove, filter, ban, lock, or message users, and makes no external-service or LLM calls. Existing SeaBot features continue to operate independently.
+- At least six comments.
+- Comments in at least two of PCOS, Testosterone, and Nashville.
+- Comments across different subreddits within five minutes, on at least two Pacific calendar dates.
 
-For the 2026-10-30 investigation of 24 supplied suspects and 26 Chrome-selected comparison contributors, see [research findings and implementation status](BotTriageResearch.md). The behavioral assessment and expanded name diagnostic run only in shadow mode and cannot authorize reports, even when baseline reports are enabled. Reports should remain disabled pending calibration and the live SDK playtest.
+Age, username, and post text do not affect the decision. A match is a request for moderator review, not proof of automation. This feature submits reports; it does not remove content or ban users. Existing AutoModerator rules and SeaBot report notifications may react to those reports.
 
-## Settings
+## Controls
 
-All settings belong to the subreddit installation. Reports start disabled (shadow mode).
+Reporting starts enabled. Set `botTriageEnabled` to false to stop evaluation and reporting. `botTriageDailyReportCap` defaults to 25 attempts per UTC day and accepts integers from 0 to 500; zero suppresses reports. Each author is evaluated at most once per 15 minutes for the current cap and reported at most once per seven days. Definite skips refund daily reservations; ambiguous report failures retain their budget and cooldown to avoid duplicates.
 
-| Setting                   | Default | Effect                                                                             |
-| ------------------------- | ------- | ---------------------------------------------------------------------------------- |
-| `botTriageReportsEnabled` | `false` | Enable HIGH reports                                                                |
-| `botTriageReportMedium`   | `false` | Also report MEDIUM when reports are enabled                                        |
-| `botTriageReportLow`      | `false` | Also report LOW with at least one campaign match; MEDIUM remains a separate opt-in |
-| `botTriageDailyReportCap` | `25`    | Integer from 0 to 500; 0 prevents all reports; resets by UTC date                  |
-| `botTriageCampaignsJson`  | blank   | Use bundled campaigns, or replace them with validated JSON                         |
+## History and timing
 
-Blank campaign configuration uses the single default campaign in [`src/botTriage/scoring.ts`](../src/botTriage/scoring.ts): `pcos-testosterone-nashville`, with `pcos`, `testosterone`, `nashville`, `sideprojects`, `sideproject`, `blooddonors`, and `supplements`. There is no separate JSON copy to keep in sync.
+The detector samples up to 100 combined comments/posts, includes the triggering comment once, and excludes later activity. Only comments contribute to the rule; posts still occupy sample slots. The 30-day and five-minute boundaries are inclusive. Qualifying windows consume their comments without reuse and count their starting date once in `America/Los_Angeles`, including DST.
 
-Example custom configuration:
+Invalid, future, or out-of-order timestamps suppress reporting. The pinned SDK omits the requested newest-first sort on the wire; the adapter validates returned order but cannot prove that the endpoint selected the newest 100 items. Samples may be incomplete, and a non-match is not a clearance.
 
-```json
-{
-  "campaigns": [
-    {
-      "id": "example-campaign",
-      "enabled": true,
-      "subreddits": ["exampleone", "exampletwo"]
-    }
-  ]
-}
-```
+## Retention
 
-Use 1–12 campaigns, each with a unique ID (2–40 lowercase letters, digits, or hyphens, beginning with a letter) and 1–20 distinct subreddit names. `enabled` is optional and defaults to true. At least one campaign must be enabled. Names are normalized to lowercase, accepting `r/` or `/r/` prefixes. The local subreddit is rejected because every evaluated author already participated there. Unknown fields, duplicate names/IDs, malformed JSON, and invalid caps suppress evaluation and reporting; the settings form also displays validation errors. Settings remain subject to Devvit's per-value size limit.
-
-## Scoring
-
-| Signal                                                     | Points     |
-| ---------------------------------------------------------- | ---------- |
-| One distinct matching subreddit                            | 5          |
-| Two distinct matching subreddits in one campaign           | 7 instead  |
-| Three or more distinct matching subreddits in one campaign | 9 instead  |
-| Account younger than 30 days                               | +3         |
-| Account 30–180 days old                                    | +2 instead |
-| Account 181–365 days old                                   | +1 instead |
-| Autogenerated-looking username                             | +1         |
-
-All campaign subreddits have equal weight. Only the strongest enabled campaign contributes overlap points; campaigns never stack. The first campaign wins equal-point ties. Repeated activity in one subreddit does not add points. Age uses whole days; missing, invalid, or future creation dates add no age points. The username pattern is two alphabetic words separated by `-` or `_`, followed by an optional separator and 2–5 digits (for example, `Silly_Banana_1234`).
-
-HIGH = 11–13, MEDIUM = 7–10, LOW = 0–6. A single match on a 100-day-old account scores 7 (MEDIUM); age and name alone never cause a report. Age and name are not prefilters: old accounts and custom names receive the same history assessment.
-
-## Runtime and storage
-
-### Independent shadow assessments
-
-`behaviorShadow` uses the fixed `network-sessions-v1` rule: within the 30 days ending at the triggering comment, require **at least six comments, at least two distinct core communities (PCOS, Testosterone, Nashville), and cross-subreddit comments within five minutes on at least two Pacific dates**. Age and name are not gates. Supporting communities come from the bundled baseline campaign excluding the core; they do not substitute for core overlap. Custom baseline campaign settings do not alter this experimental rule. Keeping the research rule fixed avoids a second settings schema and parser while it is being evaluated.
-
-The history adapter retains timestamps and comment/post type in memory and validates SDK ordering before assessment. The behavioral assessment merges the already-fetched eligible trigger by ID, prefers it over an indexed copy, excludes activity after the trigger, and bounds the combined sample at 100 items. Posts occupy sample slots but do not contribute to comment counts, core overlap, or sessions. The baseline keeps using the original validated overview sample for comparison. A delayed trigger can have fewer than 100 usable historical items; no backfill is attempted.
-
-B5 counts Pacific dates with at least two distinct subreddits in an inclusive five-minute window. B10 counts dates with three subreddits within ten minutes as supporting evidence only. Both scan comments chronologically, greedily consume the entire qualifying window, and count its start date once. Comments are not reused within each feature. `America/Los_Angeles` calendar dates handle midnight and DST; the 30-day lookback is an elapsed-time window. The two timing features are measured independently and can use the same comments.
-
-`nameShadow` (`camelcase-name-v1`) adds the case-sensitive `/^[A-Z][a-z]+[A-Z][a-z]+\d{2,5}$/` shape to the existing separated-word diagnostic. It records the alternate score without changing the baseline (`campaign-overlap-v1`) or adding a second point for an already-matching name. Neither shadow result enters `shouldReport`.
-
-Cases retain compact aggregates: recent comment count, core/supporting matches, B5/B10 date counts, versions, reason codes, trigger time, oldest sampled time, sampled count, and sample quality. `assessedAt` is the evaluation time. Individual history timestamps and IDs are not stored. A sparse or truncated no-match is not a clearance; even a shorter sample is not proof of complete history. No scheduler, delayed retry, additional API request, or external research dependency is introduced.
-
-### Safeguards and retention
-
-- The existing `CommentCreate` trigger style is used with `@devvit/public-api`; no Web scaffold, server framework, or dependency upgrade is needed.
-- Scope is fixed to `LOCAL_SUBREDDIT` (`seattle`). Removed, spam, approved, deleted-author, AutoModerator, moderator-team, and app-authored comments are skipped.
-- Atomic Redis `SET NX` throttles each author's evaluations for 15 minutes. The signature includes campaigns, tier switches, report enablement, and the cap. Changes apply to subsequent comments immediately, without resetting report cooldowns. Completed comments are not reprocessed.
-- A separate atomic claim allows at most one report attempt per author in seven days. Report errors retain the claim because Reddit may have accepted the request before its response was lost.
-- The daily counter reserves report attempts. Definite skips (cap reached, another evaluation won the cooldown, or deletion before reporting) release their reservation, so raising the cap makes the extra capacity available. The final deletion check runs before claiming the seven-day cooldown. Failed report requests retain both reservations because their outcome can be ambiguous. Redis failures may conservatively leave reservations held. The cap bounds submissions, not guaranteed delivered reports.
-- History failures produce `history_unavailable`, suppress reporting, and shorten the evaluation throttle to two minutes for later comments. A 100-item sample is marked `sample_limit_reached`, never described as complete account history.
-- The pinned SDK omits `sort: "new"` from the outgoing overview request. The history helper checks returned timestamps and treats out-of-order, invalid, or future dates as `history_unavailable`; it never re-sorts an invalid SDK sample to make it appear recent. Invalid/missing trigger timestamps also suppress reporting and the behavioral assessment. Tests exercise the actual installed SDK with only its RPC transport mocked. This checks request construction and response handling; it cannot establish the live endpoint's selection of the most recent 100 visible items. Verify that selection during playtesting. No SDK upgrade or custom Reddit client is added.
-- Report reasons include the tier, score, campaign, and observed matches, truncated to at most 100 characters.
-
-Redis is scoped to the installation. Keys are prefixed with `seabot:triage:`:
-
-| Key suffix                               | Data                                                                                                                                      | Retention                                |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `case:<commentId>`                       | Comment ID, assessment time, baseline assessment, compact behavioral/name shadow assessments, and report outcome | 14 days                                  |
-| `recent:<signature>:<lowercaseUsername>` | Evaluation claim only                                                                                                                     | 15 minutes; 2 minutes on history failure |
-| `report:<lowercaseUsername>`             | Report claim only                                                                                                                         | 7 days                                   |
-| `daily:<YYYY-MM-DD>`                     | Reserved report attempts                                                                                                                  | 2 days                                   |
-
-Cases contain no username, permalink, copied comment/post text, or history item IDs. On `CommentDelete`, the diagnostic is replaced with an expiring `deleted` marker containing no assessment. The marker prevents delayed/in-flight create handlers from recreating the diagnostic. Storage errors on deletion propagate for retry. A report already sent to Reddit cannot be recalled by this handler.
-
-Only the winning campaign's matches are retained. Match counts come from the array length; the score maximum stays in the rubric constant. Per-campaign duplicates and generated signal descriptions are not stored.
-
-Each saved assessment emits a `SeaBot triage` log entry with baseline tier/score, data quality, action, behavioral match/sample quality, and expanded-name score. These entries provide comparison counts and distributions without logging account identifiers or cross-subreddit evidence. Counts reflect throttled evaluations, not unique users over the entire rollout. No dashboard or feedback database is introduced.
-
-The deletion handler and TTLs address local comment cases and bounded retention. Before production rollout, review [Reddit's deletion requirements](https://developers.reddit.com/docs/devvit_rules#enable-and-respect-user-deletions), including account deletions and removal requests for derived history evidence. This integration does not receive deletion events from other subreddits or account-deletion events; TTL alone is not an immediate deletion workflow. Account-identifying cooldown/throttle keys and affected cases must also be removed when a deletion request is handled. Avoid exporting diagnostic evidence to external logs or services.
-
-## Validation and rollout
-
-1. Run `npm ci`, `npm run test:run`, and `npx tsc --noEmit`. Tests cover scoring boundaries, configuration validation, routing, concurrent evaluation/report claims, cap increases after denied reservations, pre-report Redis failures, real-SDK history conversion/order checks, report failures, and deletion ordering. Shadow tests cover time boundaries, Pacific midnight and both DST transitions, greedy overlapping windows, mixed content types, trigger merging/deduplication, later-activity exclusion, sparse/truncated samples, case-sensitive names, and independence from reporting.
-2. Use a private playtest installation. For that test build only, change `LOCAL_SUBREDDIT` in `src/botTriage/scoring.ts` to the private subreddit. Restore `seattle` before preparing a production build. Start with reports disabled.
-3. Compare known campaign accounts with a random group of legitimate users, keeping uncertain cases separate. Check shadow-mode distributions and inspect sampled matches. The bundled rubric has not been calibrated on a labeled account set by these unit tests.
-4. Before enabling HIGH reports, inspect AutoModerator `reports:` rules and other report-driven automation so triage reports do not incidentally remove content. Existing SeaBot Discord report notifications can also react to reports; review that integration's destination and privacy handling.
-5. Keep reports disabled while comparing the fixed network rule, baseline, and name experiment. Review matches and sampled no-matches independently. The research recommends promoting the explicit network rule only after validation; that promotion is not implemented here. Enabling HIGH or MEDIUM/LOW currently enables only baseline reports, not behavioral reports. Disable `botTriageReportsEnabled` to return to shadow mode.
-
-Moderator feedback capture and promotion of a reporting route remain follow-up work after evaluation. A live Reddit playtest is still required; unit tests and archival replay do not establish production permissions, delivery behavior, or detection precision.
+Account history and detection aggregates stay in memory. Redis stores only expiring control markers under `seabot:triage:`: processed/deleted comment IDs for 14 days, author evaluation claims for 15 minutes (two minutes after a history failure), author report claims for seven days, and daily attempt counters for two days. Comment deletion writes a tombstone to prevent delayed processing; it cannot recall an already submitted report. Logs contain outcome labels only. Handle account-deletion requests by removing that author's remaining control keys; expiration is not an immediate deletion workflow.

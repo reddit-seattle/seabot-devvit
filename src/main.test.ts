@@ -5,7 +5,7 @@ import {
   LogModmailMessage,
   LogPostReport,
   TriageComment,
-  DeleteTriageCase,
+  DeleteTriageComment,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -37,7 +37,7 @@ vi.mock("./triggers/index.js", () => ({
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
   TriageComment: { event: "CommentCreate", onEvent: vi.fn() },
-  DeleteTriageCase: { event: "CommentDelete", onEvent: vi.fn() },
+  DeleteTriageComment: { event: "CommentDelete", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -86,7 +86,7 @@ describe("main.ts", () => {
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(TriageComment);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(DeleteTriageCase);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(DeleteTriageComment);
   });
 
   it("should register all menu items dynamically", async () => {

@@ -28,7 +28,7 @@ describe("settings.ts", () => {
 
   describe("Settings array", () => {
     it("should contain all webhook settings", () => {
-      expect(Settings).toHaveLength(8);
+      expect(Settings).toHaveLength(5);
 
       const settingNames = Settings.map((setting) => (setting as any).name);
       expect(settingNames).toContain(POST_REPORT_WEBHOOK);
@@ -39,7 +39,7 @@ describe("settings.ts", () => {
     it("should have correct structure for all settings", () => {
       Settings.forEach((setting) => {
         const s = setting as any;
-        expect(["string", "boolean", "number", "paragraph"]).toContain(s.type);
+        expect(["string", "boolean", "number"]).toContain(s.type);
         expect(s).toHaveProperty("name");
         expect(s).toHaveProperty("label");
         expect(s).toHaveProperty("scope", SettingScope.Installation);

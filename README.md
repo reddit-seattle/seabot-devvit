@@ -24,12 +24,11 @@ Provides the ability to notify discord webhooks with embeds for:
 ### Bulk Actions
 - Comment nuke - Remove all comments in a single thread
 
-### Bot Campaign Triage
-- Assesses recent commenters in r/Seattle using campaign subreddit overlap, account age, and username shape
-- Separately measures repeated cross-subreddit sessions and CamelCase name expansion in shadow mode
-- Starts in shadow mode; optional reports go to moderators for review
-- Includes per-user cooldowns, a daily report cap, and expiring diagnostics
-- See [Bot Triage Setup](./docs/BotTriageSetup.md) for the rubric, settings, and rollout checks
+### Bot Network Detection
+- Reports suspected network activity in new r/Seattle comments to the moderator queue by default
+- Requires repeated cross-subreddit sessions and overlap with the network's core communities
+- Includes an off switch, author cooldowns, a daily report cap, and expiring control markers
+- See [Bot Detection Setup](./docs/BotTriageSetup.md) for the rule, controls, and retention
 
 ## Configuration
 

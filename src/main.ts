@@ -7,7 +7,7 @@ import {
   LogModmailMessage,
   LogPostReport,
   TriageComment,
-  DeleteTriageCase,
+  DeleteTriageComment,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
@@ -31,7 +31,7 @@ Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
 Devvit.addTrigger(TriageComment);
-Devvit.addTrigger(DeleteTriageCase);
+Devvit.addTrigger(DeleteTriageComment);
 
 /**
  * Register all menu items
