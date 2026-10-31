@@ -1,42 +1,32 @@
-import type { Comment, TriggerContext } from "@devvit/public-api";
+import type { TriggerContext } from "@devvit/public-api";
+import { HISTORY_LIMIT, type HistoryItem } from "./scoring.js";
 
-const HISTORY_LIMIT = 100;
-export interface HistoryItem {
-  id: string;
-  subreddit: string;
-  createdAtMs: number;
-  kind: "comment" | "post";
-}
-
-/** Validate the overview before merging the eligible trigger into a bounded sample. */
 export async function getRecentHistory(
   reddit: TriggerContext["reddit"],
-  comment: Pick<Comment, "id" | "authorName" | "subredditName" | "createdAt">,
+  username: string,
   nowMs = Date.now(),
 ): Promise<HistoryItem[]> {
-  const triggerTime = comment.createdAt?.getTime();
-  if (!Number.isFinite(triggerTime) || triggerTime <= 0 || triggerTime > nowMs)
-    throw new Error("Invalid trigger timestamp");
   const items = await reddit
     .getCommentsAndPostsByUser({
-      username: comment.authorName,
+      username,
       sort: "new",
       limit: HISTORY_LIMIT,
     })
     .get(HISTORY_LIMIT);
 
-  // SDK 0.12.20 omits sort on the wire. Reject invalid ordering before any local
-  // sorting; descending timestamps alone still cannot prove the sample is newest.
+  // SDK 0.12.20 omits sort from the wire request. Verify the returned order
+  // instead of silently scoring a non-chronological sample or sorting it locally.
   let previousTime = Infinity;
-  const history: HistoryItem[] = items.map((item) => {
+  return items.map((item) => {
     const time = item.createdAt.getTime();
     if (
       !Number.isFinite(time) ||
       time <= 0 ||
       time > nowMs ||
       time > previousTime
-    )
-      throw new Error("Invalid or out-of-order account history");
+    ) {
+      throw new Error("Account history is not newest-first");
+    }
     previousTime = time;
     const kind = item.id.startsWith("t1_")
       ? "comment"
@@ -46,22 +36,9 @@ export async function getRecentHistory(
     if (!kind) throw new Error("Unknown account history item type");
     return {
       id: item.id,
-      subreddit: item.subredditName.toLowerCase(),
+      subreddit: item.subredditName,
       createdAtMs: time,
       kind,
     };
   });
-  history.push({
-    id: comment.id,
-    subreddit: comment.subredditName.toLowerCase(),
-    createdAtMs: triggerTime,
-    kind: "comment",
-  });
-
-  // The fetched trigger wins over its indexed copy. Exclude activity after it,
-  // including on delayed events, and keep posts within the combined 100-item bound.
-  return [...new Map(history.map((item) => [item.id, item])).values()]
-    .filter((item) => item.createdAtMs <= triggerTime)
-    .sort((a, b) => b.createdAtMs - a.createdAtMs || b.id.localeCompare(a.id))
-    .slice(0, HISTORY_LIMIT);
 }

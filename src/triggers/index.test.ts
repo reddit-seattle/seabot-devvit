@@ -5,7 +5,7 @@ import {
   LogModmailMessage,
   LogPostReport,
   TriageComment,
-  DeleteTriageComment,
+  DeleteTriageCase,
 } from "./index.js";
 
 const triggers = [
@@ -14,7 +14,7 @@ const triggers = [
   AddCommentToRestrictedFlairPost,
   LogPostReport,
   TriageComment,
-  DeleteTriageComment,
+  DeleteTriageCase,
 ];
 
 describe("triggers index", () => {

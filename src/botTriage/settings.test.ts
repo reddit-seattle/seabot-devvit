@@ -5,38 +5,60 @@ import {
   readTriageSettings,
 } from "./settings.js";
 
-describe("bot triage controls", () => {
-  it("reports by default and allows evaluation to be disabled", () => {
-    expect(readTriageSettings({})).toEqual({
-      enabled: true,
+describe("bot triage settings", () => {
+  it("defaults to HIGH reporting and a daily cap of 25", () => {
+    expect(readTriageSettings({}).options).toEqual({
+      reportsEnabled: true,
+      reportMedium: false,
+      reportLow: false,
       dailyReportCap: 25,
     });
-    expect(readTriageSettings({ botTriageEnabled: false }).enabled).toBe(false);
-    expect(() => readTriageSettings({ botTriageEnabled: "false" })).toThrow();
-    expect(() => readTriageSettings({ botTriageEnabled: null })).toThrow();
     expect(
       botTriageSettings.find(
-        (field) => "name" in field && field.name === "botTriageEnabled",
+        (field) => "name" in field && field.name === "botTriageReportsEnabled",
       ),
     ).toMatchObject({ defaultValue: true });
   });
-  it.each([0, 25, 500])("accepts cap %i", (value) =>
-    expect(parseDailyReportCap(value)).toBe(value),
+  it.each([false, "true", null, 1])(
+    "suppresses reports for a disabled or invalid switch: %s",
+    (value) => {
+      expect(
+        readTriageSettings({ botTriageReportsEnabled: value }).options
+          .reportsEnabled,
+      ).toBe(false);
+    },
   );
+  it.each([0, 25, 500])("accepts a daily cap of %i", (value) => {
+    expect(parseDailyReportCap(value)).toBe(value);
+  });
   it.each([-1, 501, 1.5, NaN, Infinity, "25", null])(
-    "rejects cap %s",
+    "rejects an invalid daily cap: %s",
     (value) => {
       expect(() =>
         readTriageSettings({ botTriageDailyReportCap: value }),
       ).toThrow();
     },
   );
-  it("uses the same cap validation in the settings form", async () => {
+  it("validates the campaign schema at runtime", () => {
+    expect(() => readTriageSettings({ botTriageCampaignsJson: "{" })).toThrow();
+  });
+  it("provides settings-form feedback using the runtime validators", async () => {
+    const campaign = botTriageSettings.find(
+      (field) => "name" in field && field.name === "botTriageCampaignsJson",
+    );
     const cap = botTriageSettings.find(
       (field) => "name" in field && field.name === "botTriageDailyReportCap",
     );
-    if (cap?.type !== "number") throw new Error("Missing cap setting");
+    // Validators do not need a Devvit context.
+    if (campaign?.type !== "paragraph" || cap?.type !== "number")
+      throw new Error("Missing settings");
     const context = {} as Parameters<NonNullable<typeof cap.onValidate>>[1];
+    expect(
+      await campaign.onValidate?.({ value: "{", isEditing: true }, context),
+    ).toBeTypeOf("string");
+    expect(
+      await campaign.onValidate?.({ value: "", isEditing: true }, context),
+    ).toBeUndefined();
     expect(
       await cap.onValidate?.({ value: -1, isEditing: true }, context),
     ).toBeTypeOf("string");
