@@ -1,5 +1,6 @@
 import { Context, SettingScope, SettingsFormField } from "@devvit/public-api";
 import { createResubmissionLink } from "./utils/reddithelpers.js";
+import { parseWebhook } from "./modlog/discord.js";
 
 export const RESTRICTED_FLAIR_TEXT = "Market Traffic Only";
 export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - New comments by users without an equipped r/Seattle flair will be automatically removed.
@@ -85,6 +86,8 @@ const DISCORD_WEBHOOK_SUFFIX = "webhook URL";
 export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
 export const COMMENT_REPORT_WEBHOOK = "commentReportWebhookURL";
 export const MODMAIL_REPORT_WEBHOOK = "modmailWebhookURL";
+export const MODLOG_WEBHOOK = "modlogWebhookURL";
+export const MODLOG_IGNORED_ACTIONS = "modlogIgnoredActions";
 
 const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
@@ -102,6 +105,30 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
 ];
 
 const Settings: SettingsFormField[] = [
+  {
+    type: "string",
+    name: MODLOG_WEBHOOK,
+    label: "moderation log forum webhook URL",
+    helpText:
+      "Discord forum channel webhook. Leave blank to disable. Actions on each post and its comments share a thread.",
+    scope: SettingScope.Installation,
+    onValidate: ({ value }) => {
+      if (!value?.trim()) return;
+      try {
+        parseWebhook(value);
+      } catch {
+        return "Enter a Discord forum webhook URL without query parameters.";
+      }
+    },
+  },
+  {
+    type: "string",
+    name: MODLOG_IGNORED_ACTIONS,
+    label: "moderation log actions to ignore",
+    helpText:
+      "Optional comma-separated action names, e.g. approvelink, approvecomment. Blank logs all received actions.",
+    scope: SettingScope.Installation,
+  },
   // Discord webhook settings
   ...DISCORD_WEBHOOK_SETTINGS.map(({ name, label }) => ({
     type: "string" as const,

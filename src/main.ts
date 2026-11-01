@@ -1,20 +1,24 @@
 import { Devvit } from "@devvit/public-api";
 import { menuItems } from "./menuItems/index.js";
 import Settings from "./settings.js";
+import { DeliverModerationLog } from "./modlog/queue.js";
 import {
   AddCommentToRestrictedFlairPost,
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogModActions,
+  SetupModerationLog,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
+  redis: true,
   http: {
-    // You can ignore this. These endpoints are not used currently...
     domains: [
-      "https://api-web.nhle.com", // NHL API
-      "https://api.nhle.com", // NHL REST API
-      "https://statsapi.mlb.com", // MLB stats API
+      "discord.com",
+      "api-web.nhle.com", // NHL API (reserved for future features)
+      "api.nhle.com", // NHL REST API
+      "statsapi.mlb.com", // MLB stats API
     ],
     enabled: true,
   },
@@ -27,6 +31,9 @@ Devvit.addTrigger(LogCommentReports);
 Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
+Devvit.addTrigger(LogModActions);
+Devvit.addTrigger(SetupModerationLog);
+Devvit.addSchedulerJob(DeliverModerationLog);
 
 /**
  * Register all menu items
