@@ -4,6 +4,8 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogModActions,
+  LogLinkedBans,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -34,6 +36,8 @@ vi.mock("./triggers/index.js", () => ({
     onEvent: vi.fn(),
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
+  LogModActions: { event: "ModAction", onEvent: vi.fn() },
+  LogLinkedBans: { event: "ModMail", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -54,11 +58,13 @@ describe("main.ts", () => {
 
     expect(mockDevvit.configure).toHaveBeenCalledWith({
       redditAPI: true,
+      redis: true,
       http: {
         domains: [
           "https://api-web.nhle.com",
           "https://api.nhle.com",
           "https://statsapi.mlb.com",
+          "discord.com",
         ],
         enabled: true,
       },
@@ -73,13 +79,15 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(4);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
       AddCommentToRestrictedFlairPost,
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModActions);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogLinkedBans);
   });
 
   it("should register all menu items dynamically", async () => {

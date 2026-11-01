@@ -5,6 +5,8 @@ import Settings, {
   Icons,
   MODMAIL_REPORT_WEBHOOK,
   POST_REPORT_WEBHOOK,
+  MODLOG_WEBHOOK,
+  MODLOG_IGNORED_ACTIONS,
 } from "./settings.js";
 
 describe("settings.ts", () => {
@@ -28,12 +30,14 @@ describe("settings.ts", () => {
 
   describe("Settings array", () => {
     it("should contain all webhook settings", () => {
-      expect(Settings).toHaveLength(3);
+      expect(Settings).toHaveLength(5);
 
       const settingNames = Settings.map((setting) => (setting as any).name);
       expect(settingNames).toContain(POST_REPORT_WEBHOOK);
       expect(settingNames).toContain(COMMENT_REPORT_WEBHOOK);
       expect(settingNames).toContain(MODMAIL_REPORT_WEBHOOK);
+      expect(settingNames).toContain(MODLOG_WEBHOOK);
+      expect(settingNames).toContain(MODLOG_IGNORED_ACTIONS);
     });
 
     it("should have correct structure for all settings", () => {

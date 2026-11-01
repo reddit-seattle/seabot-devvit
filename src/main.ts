@@ -6,15 +6,19 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogModActions,
+  LogLinkedBans,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
+  redis: true,
   http: {
     // You can ignore this. These endpoints are not used currently...
     domains: [
       "https://api-web.nhle.com", // NHL API
       "https://api.nhle.com", // NHL REST API
       "https://statsapi.mlb.com", // MLB stats API
+      "discord.com",
     ],
     enabled: true,
   },
@@ -27,6 +31,8 @@ Devvit.addTrigger(LogCommentReports);
 Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
+Devvit.addTrigger(LogModActions);
+Devvit.addTrigger(LogLinkedBans);
 
 /**
  * Register all menu items
