@@ -59,10 +59,10 @@ describe("main.ts", () => {
       redis: true,
       http: {
         domains: [
+          "https://api-web.nhle.com",
+          "https://api.nhle.com",
+          "https://statsapi.mlb.com",
           "discord.com",
-          "api-web.nhle.com",
-          "api.nhle.com",
-          "statsapi.mlb.com",
         ],
         enabled: true,
       },

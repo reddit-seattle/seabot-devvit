@@ -12,11 +12,12 @@ Devvit.configure({
   redditAPI: true,
   redis: true,
   http: {
+    // You can ignore this. These endpoints are not used currently...
     domains: [
+      "https://api-web.nhle.com", // NHL API
+      "https://api.nhle.com", // NHL REST API
+      "https://statsapi.mlb.com", // MLB stats API
       "discord.com",
-      "api-web.nhle.com", // NHL API (reserved for future features)
-      "api.nhle.com", // NHL REST API
-      "statsapi.mlb.com", // MLB stats API
     ],
     enabled: true,
   },
