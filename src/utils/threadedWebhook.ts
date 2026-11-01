@@ -30,6 +30,7 @@ export async function sendToDiscordThread(
     group: string;
     actionId?: string;
     threadName: string;
+    starter: Record<string, unknown>;
     payload: Parameters<typeof SendContentToWebhook>[1];
   },
   redis: TriggerContext["redis"],
@@ -66,7 +67,12 @@ export async function sendToDiscordThread(
       else url.searchParams.delete("thread_id");
       const response = await SendContentToWebhook(url.toString(), {
         ...message.payload,
-        ...(!threadId ? { thread_name: message.threadName } : {}),
+        ...(!threadId
+          ? {
+              thread_name: message.threadName,
+              embeds: [message.starter, ...message.payload.embeds],
+            }
+          : {}),
       }).catch(() => {
         throw new Error("Discord moderation webhook request failed");
       });

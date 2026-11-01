@@ -11,7 +11,7 @@ Provides the ability to notify discord webhooks with embeds for:
 - New post reports
 - New comment reports
 - New modmail messages
-- Moderation actions grouped into Discord forum threads by Reddit post or user
+- Post/comment moderation actions and linked bans grouped into Discord forum threads by Reddit post
 
 See [Moderation Log Setup](./docs/ModerationLogSetup.md) to configure the optional
 threaded moderation log, action filters, and delivery behavior.

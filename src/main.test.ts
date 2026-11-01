@@ -5,6 +5,7 @@ import {
   LogModmailMessage,
   LogPostReport,
   LogModActions,
+  LogLinkedBans,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -36,6 +37,7 @@ vi.mock("./triggers/index.js", () => ({
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
   LogModActions: { event: "ModAction", onEvent: vi.fn() },
+  LogLinkedBans: { event: "ModMail", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -77,7 +79,7 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(5);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
@@ -85,6 +87,7 @@ describe("main.ts", () => {
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModActions);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogLinkedBans);
   });
 
   it("should register all menu items dynamically", async () => {

@@ -5,6 +5,7 @@ import {
   LogModmailMessage,
   LogPostReport,
   LogModActions,
+  LogLinkedBans,
 } from "./index.js";
 
 const triggers = [
@@ -13,13 +14,14 @@ const triggers = [
   AddCommentToRestrictedFlairPost,
   LogPostReport,
   LogModActions,
+  LogLinkedBans,
 ];
 
 describe("triggers index", () => {
   it("should export all triggers", () => {
     expect(triggers).toBeDefined();
     expect(Array.isArray(triggers)).toBe(true);
-    expect(triggers).toHaveLength(5);
+    expect(triggers).toHaveLength(6);
 
     // Verify each trigger has the required properties
     triggers.forEach((trigger) => {

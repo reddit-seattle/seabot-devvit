@@ -7,6 +7,7 @@ import {
   LogModmailMessage,
   LogPostReport,
   LogModActions,
+  LogLinkedBans,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
@@ -31,6 +32,7 @@ Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
 Devvit.addTrigger(LogModActions);
+Devvit.addTrigger(LogLinkedBans);
 
 /**
  * Register all menu items

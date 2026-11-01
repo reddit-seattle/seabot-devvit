@@ -110,7 +110,7 @@ const Settings: SettingsFormField[] = [
     name: MODLOG_WEBHOOK,
     label: "moderation log forum webhook URL",
     helpText:
-      "Discord forum channel webhook. Leave blank to disable. Actions on each post and its comments share a thread.",
+      "Discord forum channel webhook. Leave blank to disable. Post/comment actions and bans linking to that post share a thread.",
     scope: SettingScope.Installation,
     onValidate: ({ value }) => {
       if (!value?.trim()) return;
@@ -126,7 +126,7 @@ const Settings: SettingsFormField[] = [
     name: MODLOG_IGNORED_ACTIONS,
     label: "moderation log actions to ignore",
     helpText:
-      "Optional comma-separated action names, e.g. approvelink, approvecomment. Blank logs all received actions.",
+      "Optional comma-separated action names, e.g. approvelink, approvecomment, banuser. Blank logs all supported post-related actions.",
     scope: SettingScope.Installation,
   },
   // Discord webhook settings
