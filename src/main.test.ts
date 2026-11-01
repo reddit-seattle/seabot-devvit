@@ -5,7 +5,6 @@ import {
   LogModmailMessage,
   LogPostReport,
   LogModActions,
-  SetupModerationLog,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -14,7 +13,6 @@ const mockDevvit = {
   addTrigger: vi.fn(),
   addMenuItem: vi.fn(),
   addSettings: vi.fn(),
-  addSchedulerJob: vi.fn(),
 };
 
 vi.mock("@devvit/public-api", () => ({
@@ -38,10 +36,6 @@ vi.mock("./triggers/index.js", () => ({
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
   LogModActions: { event: "ModAction", onEvent: vi.fn() },
-  SetupModerationLog: {
-    events: ["AppInstall", "AppUpgrade"],
-    onEvent: vi.fn(),
-  },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -83,7 +77,7 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(5);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
@@ -91,10 +85,6 @@ describe("main.ts", () => {
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModActions);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(SetupModerationLog);
-    expect(mockDevvit.addSchedulerJob).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "deliver-moderation-log" }),
-    );
   });
 
   it("should register all menu items dynamically", async () => {

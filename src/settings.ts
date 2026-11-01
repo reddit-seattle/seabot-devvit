@@ -1,6 +1,6 @@
 import { Context, SettingScope, SettingsFormField } from "@devvit/public-api";
 import { createResubmissionLink } from "./utils/reddithelpers.js";
-import { parseWebhook } from "./modlog/discord.js";
+import { parseWebhook } from "./utils/threadedWebhook.js";
 
 export const RESTRICTED_FLAIR_TEXT = "Market Traffic Only";
 export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`${RESTRICTED_FLAIR_TEXT}\` - New comments by users without an equipped r/Seattle flair will be automatically removed.

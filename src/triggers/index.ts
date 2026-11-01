@@ -2,7 +2,7 @@ import AddCommentToRestrictedFlairPost from "./addRestrictedFlairPostComment.js"
 import LogCommentReports from "./logCommentReports.js";
 import LogModmailMessage from "./logModmail.js";
 import LogPostReport from "./logPostReports.js";
-import LogModActions, { SetupModerationLog } from "./logModActions.js";
+import LogModActions from "./logModActions.js";
 
 export {
   AddCommentToRestrictedFlairPost,
@@ -10,5 +10,4 @@ export {
   LogModmailMessage,
   LogPostReport,
   LogModActions,
-  SetupModerationLog,
 };

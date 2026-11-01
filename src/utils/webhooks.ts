@@ -3,9 +3,14 @@
  * */
 export const SendContentToWebhook = async (
   webhookURL: string,
-  payload: { content?: string; embeds: Record<string, unknown>[] },
+  payload: {
+    content?: string;
+    embeds: Record<string, unknown>[];
+    thread_name?: string;
+    allowed_mentions?: { parse: string[] };
+  },
 ) => {
-  await fetch(webhookURL, {
+  return fetch(webhookURL, {
     method: "post",
     headers: {
       "Content-Type": "application/json",

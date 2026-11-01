@@ -1,14 +1,12 @@
 import { Devvit } from "@devvit/public-api";
 import { menuItems } from "./menuItems/index.js";
 import Settings from "./settings.js";
-import { DeliverModerationLog } from "./modlog/queue.js";
 import {
   AddCommentToRestrictedFlairPost,
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
   LogModActions,
-  SetupModerationLog,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
@@ -32,8 +30,6 @@ Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
 Devvit.addTrigger(LogModActions);
-Devvit.addTrigger(SetupModerationLog);
-Devvit.addSchedulerJob(DeliverModerationLog);
 
 /**
  * Register all menu items
