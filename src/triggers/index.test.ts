@@ -4,8 +4,8 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
-  TriageComment,
-  DeleteTriageCase,
+  ReportCommenterParticipation,
+  DeleteCommenterReview,
 } from "./index.js";
 
 const triggers = [
@@ -13,8 +13,8 @@ const triggers = [
   LogModmailMessage,
   AddCommentToRestrictedFlairPost,
   LogPostReport,
-  TriageComment,
-  DeleteTriageCase,
+  ReportCommenterParticipation,
+  DeleteCommenterReview,
 ];
 
 describe("triggers index", () => {

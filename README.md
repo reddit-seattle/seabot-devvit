@@ -27,7 +27,7 @@ Provides the ability to notify discord webhooks with embeds for:
 ### Commenter Review
 - Reports new r/Seattle comments when the author's sampled posts/comments include at least two of r/PCOS, r/Testosterone, and r/Nashville
 - Reports list the matching communities for manual account review, with a seven-day per-author cooldown
-- Enabled by default with one on/off setting; see [setup and limits](./docs/BotTriageSetup.md)
+- Enabled by default with one on/off setting; see [Commenter Review Setup](./docs/CommenterReviewSetup.md)
 
 ## Configuration
 

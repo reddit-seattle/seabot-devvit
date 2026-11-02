@@ -3,13 +3,16 @@ import type {
   CommentDeleteDefinition,
   TriggerContext,
 } from "@devvit/public-api";
-import { getParticipationMatches } from "../botTriage/history.js";
+import { getParticipationMatches } from "../utils/participation.js";
 
 const DAY_MS = 86_400_000;
 const caseKey = (id: string) => `seabot:triage:case:${id}`;
 const expiresIn = (ms: number) => new Date(Date.now() + ms);
 
-async function evaluateComment(id: string, context: TriggerContext): Promise<void> {
+async function evaluateComment(
+  id: string,
+  context: TriggerContext,
+): Promise<void> {
   const { reddit, redis, settings } = context;
   const enabled = await settings.get("botTriageReportsEnabled");
   if (enabled !== undefined && enabled !== true) return;
@@ -21,9 +24,13 @@ async function evaluateComment(id: string, context: TriggerContext): Promise<voi
     comment.removed ||
     comment.spam ||
     comment.approved ||
+    comment.ignoringReports ||
     !username ||
     [
-      "[deleted]", "automoderator", "seattle-modteam", context.appName.toLowerCase(),
+      "[deleted]",
+      "automoderator",
+      "seattle-modteam",
+      context.appName.toLowerCase(),
     ].includes(username)
   )
     return;
@@ -68,7 +75,7 @@ async function evaluateComment(id: string, context: TriggerContext): Promise<voi
   });
 }
 
-export const TriageComment: CommentCreateDefinition = {
+const ReportCommenterParticipation: CommentCreateDefinition = {
   event: "CommentCreate",
   onEvent: async (event, context) => {
     if (
@@ -80,13 +87,13 @@ export const TriageComment: CommentCreateDefinition = {
       await evaluateComment(event.comment.id, context);
     } catch {
       console.error(
-        "SeaBot triage: evaluation/report failed; check service availability",
+        "SeaBot commenter review: evaluation/report failed; check service availability",
       );
     }
   },
 };
 
-export const DeleteTriageCase: CommentDeleteDefinition = {
+export const DeleteCommenterReview: CommentDeleteDefinition = {
   event: "CommentDelete",
   onEvent: async (event, context) => {
     if (
@@ -100,3 +107,5 @@ export const DeleteTriageCase: CommentDeleteDefinition = {
     });
   },
 };
+
+export default ReportCommenterParticipation;

@@ -4,8 +4,8 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
-  TriageComment,
-  DeleteTriageCase,
+  ReportCommenterParticipation,
+  DeleteCommenterReview,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -36,8 +36,8 @@ vi.mock("./triggers/index.js", () => ({
     onEvent: vi.fn(),
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
-  TriageComment: { event: "CommentCreate", onEvent: vi.fn() },
-  DeleteTriageCase: { event: "CommentDelete", onEvent: vi.fn() },
+  ReportCommenterParticipation: { event: "CommentCreate", onEvent: vi.fn() },
+  DeleteCommenterReview: { event: "CommentDelete", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -85,8 +85,10 @@ describe("main.ts", () => {
       AddCommentToRestrictedFlairPost,
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(TriageComment);
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(DeleteTriageCase);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
+      ReportCommenterParticipation,
+    );
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(DeleteCommenterReview);
   });
 
   it("should register all menu items dynamically", async () => {
