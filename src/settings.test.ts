@@ -37,11 +37,10 @@ describe("settings.ts", () => {
     });
 
     it("enables the fixed participation rule by default", () => {
-      expect(
-        Settings.find(
-          (s) => "name" in s && s.name === "botTriageReportsEnabled",
-        ),
-      ).toMatchObject({ type: "boolean", defaultValue: true });
+      const setting = Settings.find(
+        (s) => "name" in s && s.name === "botTriageReportsEnabled",
+      );
+      expect(setting).toMatchObject({ type: "boolean", defaultValue: true });
     });
 
     it("should have correct structure for all settings", () => {

@@ -42,16 +42,13 @@ const ReportCommenterParticipation: CommentCreateDefinition = {
           limit: 100,
         })
         .get(100);
-      const subs = new Set(
-        history
-          .filter(
-            (item) =>
-              item.createdAt.getTime() > 0 && item.createdAt.getTime() <= at,
-          )
-          .map((item) => item.subredditName.toLowerCase()),
-      );
       const matches = ["pcos", "testosterone", "nashville"].filter((sub) =>
-        subs.has(sub),
+        history.some(
+          (item) =>
+            item.subredditName.toLowerCase() === sub &&
+            item.createdAt.getTime() > 0 &&
+            item.createdAt.getTime() <= at,
+        ),
       );
       if (matches.length < 2) return;
 
@@ -71,9 +68,7 @@ const ReportCommenterParticipation: CommentCreateDefinition = {
         reason: `SeaBot review: prior activity in ${matches.map((sub) => `r/${sub}`).join(", ")}`,
       });
     } catch {
-      console.error(
-        "SeaBot commenter review failed; check service availability",
-      );
+      console.error("SeaBot commenter review failed");
     }
   },
 };
