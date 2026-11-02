@@ -10,7 +10,6 @@ import {
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
-  redis: true,
   http: {
     // You can ignore this. These endpoints are not used currently...
     domains: [

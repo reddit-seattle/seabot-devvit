@@ -8,10 +8,7 @@ const reviewable = (comment: Comment) =>
 
 const ReportCommenterParticipation: CommentCreateDefinition = {
   event: "CommentCreate",
-  onEvent: async (
-    event,
-    { reddit, redis, settings, subredditName, appName },
-  ) => {
+  onEvent: async (event, { reddit, settings, subredditName, appName }) => {
     if (subredditName?.toLowerCase() !== "seattle" || !event.comment?.id)
       return;
     try {
@@ -31,8 +28,6 @@ const ReportCommenterParticipation: CommentCreateDefinition = {
         ].includes(username)
       )
         return;
-      const key = `seabot:triage:report:${username}`;
-      if (await redis.get(key)) return;
       const at = comment.createdAt.getTime();
       if (!(at > 0 && at <= Date.now())) return;
       const history = await reddit
@@ -52,18 +47,10 @@ const ReportCommenterParticipation: CommentCreateDefinition = {
       );
       if (matches.length < 2) return;
 
-      // Recheck deletion/moderation after the history lookup, before claiming a report.
+      // Recheck deletion/moderation after the history lookup, before reporting.
       comment = await reddit.getCommentById(comment.id);
       if (!reviewable(comment) || comment.authorName.toLowerCase() !== username)
         return;
-      if (
-        (await redis.set(key, "1", {
-          nx: true,
-          expiration: new Date(Date.now() + 7 * 86_400_000),
-        })) !== "OK"
-      )
-        return;
-      // Retain the claim on failure: Reddit may have accepted the report.
       await reddit.report(comment, {
         reason: `SeaBot review: prior activity in ${matches.map((sub) => `r/${sub}`).join(", ")}`,
       });

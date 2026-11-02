@@ -56,7 +56,6 @@ describe("main.ts", () => {
 
     expect(mockDevvit.configure).toHaveBeenCalledWith({
       redditAPI: true,
-      redis: true,
       http: {
         domains: [
           "https://api-web.nhle.com",

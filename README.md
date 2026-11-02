@@ -29,7 +29,7 @@ Provides the ability to notify discord webhooks with embeds for:
 - Enabled by default; disable **Report commenters active in 2 of PCOS, Testosterone, Nashville** (`botTriageReportsEnabled`) in installation settings to stop it.
 - Checks up to 100 posts/comments at or before the triggering comment. The pinned SDK drops the requested sort, so the sample may not be the newest 100 or complete.
 - Skips deleted authors, service accounts, and removed, spam, approved, or ignored-report comments. Matching comments are re-fetched before reporting to check current status.
-- One atomic seven-day report claim per author prevents concurrent duplicates. A failed report retains its claim because Reddit may have accepted it; history failures can retry on the next comment. Redis stores only these expiring claims, with no history or per-comment records.
+- Reports each eligible comment; there is no per-author cooldown.
 
 ## Configuration
 

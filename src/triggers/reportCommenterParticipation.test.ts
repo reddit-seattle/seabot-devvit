@@ -14,11 +14,9 @@ const reddit = {
   getCommentsAndPostsByUser: vi.fn(),
   report: vi.fn(),
 };
-const redis = { get: vi.fn(), set: vi.fn(), del: vi.fn() };
 const settings = { get: vi.fn() };
 const context = {
   reddit,
-  redis,
   settings,
   subredditName: "Seattle",
   appName: "seattle-bot",
@@ -32,7 +30,6 @@ beforeEach(() => {
   reddit.getCommentById.mockResolvedValue(comment);
   reddit.getCommentsAndPostsByUser.mockReturnValue({ get: listing });
   listing.mockResolvedValue([item("pcos"), item("nashville")]);
-  redis.set.mockResolvedValue("OK");
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -61,7 +58,7 @@ it.each([
   },
 );
 
-it("bounds history and claims one week atomically", async () => {
+it("bounds history and reports the matching communities", async () => {
   listing.mockResolvedValue(
     [...Array(99).fill("PCOS"), "Nashville"].map((sub) => item(sub)),
   );
@@ -76,14 +73,6 @@ it("bounds history and claims one week atomically", async () => {
   expect(reddit.report).toHaveBeenCalledWith(comment, {
     reason: "SeaBot review: prior activity in r/pcos, r/nashville",
   });
-  expect(redis.set).toHaveBeenCalledExactlyOnceWith(
-    "seabot:triage:report:example",
-    "1",
-    {
-      nx: true,
-      expiration: new Date(NOW + 7 * 86_400_000),
-    },
-  );
 });
 
 it.each([false, null, "true"])("skips disabled setting %s", async (value) => {
@@ -114,7 +103,6 @@ it.each([
     reddit.getCommentById.mockResolvedValue({ ...comment, ...changes });
     await run();
     expect(listing).toHaveBeenCalledTimes(recheck ? 1 : 0);
-    expect(redis.set).not.toHaveBeenCalled();
     expect(reddit.report).not.toHaveBeenCalled();
   },
 );
@@ -126,25 +114,22 @@ it("ignores other installations and missing comments", async () => {
   expect(reddit.getCommentById).not.toHaveBeenCalled();
 });
 
-it("skips cooldowns and prevents concurrent duplicate reports", async () => {
-  redis.get.mockResolvedValueOnce("1");
+it("reports each eligible comment from the same author", async () => {
+  const second = { ...comment, id: "t1_second" };
   await run();
-  expect(listing).not.toHaveBeenCalled();
-  redis.set.mockResolvedValueOnce("OK").mockResolvedValue("");
-  await Promise.all([run(), run()]);
-  expect(reddit.report).toHaveBeenCalledOnce();
+  reddit.getCommentById.mockResolvedValue(second);
+  await run({}, { comment: second });
+  expect(reddit.report).toHaveBeenCalledTimes(2);
+  expect(reddit.report).toHaveBeenNthCalledWith(2, second, expect.anything());
 });
 
 it.each([
-  ["history", listing, 0, 0],
-  ["claim", redis.set, 1, 0],
-  ["report", reddit.report, 1, 1],
-] as const)("handles %s failure", async (_, method, claims, reports) => {
+  ["history", listing, 0],
+  ["report", reddit.report, 1],
+] as const)("handles %s failure", async (_, method, reports) => {
   method.mockRejectedValueOnce(new Error("unavailable"));
   await run();
-  expect(redis.set).toHaveBeenCalledTimes(claims);
   expect(reddit.report).toHaveBeenCalledTimes(reports);
-  expect(redis.del).not.toHaveBeenCalled();
   if (!reports) {
     await run();
     expect(reddit.report).toHaveBeenCalledOnce();
