@@ -19,7 +19,7 @@ const EXCLUDED_AUTHORS = new Set([
   "seattle-modteam",
 ]);
 const ENABLED_WHEN_UNCONFIGURED = true;
-const REPORT_REASON_PREFIX = "SeaBot review: prior activity in ";
+const REPORT_REASON_PREFIX = `Possible bot detected; active in at least ${MINIMUM_MATCH_COUNT} flagged subreddits: `;
 
 // Keep these identifiers stable so saved settings and review decisions remain valid.
 const REPORTS_ENABLED_SETTING = "botTriageReportsEnabled";

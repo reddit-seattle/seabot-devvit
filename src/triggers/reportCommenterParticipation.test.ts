@@ -71,6 +71,9 @@ it.each([
     );
     await run();
     expect(reddit.report).toHaveBeenCalledTimes(count);
+    for (const [, options] of reddit.report.mock.calls) {
+      expect(options.reason.length).toBeLessThanOrEqual(100);
+    }
   },
 );
 
@@ -92,7 +95,8 @@ it("bounds history and atomically reports one matching comment", async () => {
   });
   expect(listing).toHaveBeenCalledWith(100);
   expect(reddit.report).toHaveBeenCalledWith(comment, {
-    reason: "SeaBot review: prior activity in r/pcos, r/nashville",
+    reason:
+      "Possible bot detected; active in at least 2 flagged subreddits: r/pcos, r/nashville",
   });
   expect(redis.set).toHaveBeenCalledWith(authorKey, "reported", {
     nx: true,
