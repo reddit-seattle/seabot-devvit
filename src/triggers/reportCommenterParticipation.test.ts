@@ -1,4 +1,4 @@
-import type { TriggerContext } from "@devvit/public-api";
+import type { SetOptions, TriggerContext } from "@devvit/public-api";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import trigger, {
   ApproveCommenterParticipation,
@@ -146,31 +146,55 @@ it("ignores other installations and missing comments", async () => {
   expect(reddit.getCommentById).not.toHaveBeenCalled();
 });
 
-it.each(["reported", "approved"])(
-  "honors author status %s after a month",
-  async (status) => {
-    redis.get.mockResolvedValue(status);
+it.each([null, 1, 8])(
+  "persists review decisions; approval on day %s",
+  async (approvalDay) => {
+    const stored = new Map<string, { value: string; until: number }>();
+    const read = (key: string) => {
+      const entry = stored.get(key);
+      return entry && entry.until > Date.now() ? entry.value : undefined;
+    };
+    redis.get.mockImplementation(async (key) => read(key));
+    redis.set.mockImplementation(
+      async (key, value, options: SetOptions = {}) => {
+        if (options.nx && read(key)) return "";
+        stored.set(key, {
+          value,
+          until: options.expiration?.getTime() ?? Infinity,
+        });
+        return "OK";
+      },
+    );
+    reddit.getCommentById.mockImplementation(async (id) => ({
+      ...comment,
+      id,
+    }));
+    const next = { comment: { ...comment, id: "t1_next" } };
     await run();
-    expect(listing).not.toHaveBeenCalled();
+    await run({}, next);
+    expect(reddit.report).toHaveBeenCalledOnce();
+    if (approvalDay !== null) {
+      vi.mocked(Date.now).mockReturnValue(NOW + approvalDay * 86_400_000);
+      settings.get.mockResolvedValue(false);
+      await approve();
+      settings.get.mockResolvedValue(true);
+    }
     vi.mocked(Date.now).mockReturnValue(NOW + 30 * 86_400_000);
-    redis.get.mockResolvedValue(status === "approved" ? status : undefined);
     await run();
-    expect(reddit.report).toHaveBeenCalledTimes(status === "approved" ? 0 : 1);
+    expect(reddit.report).toHaveBeenCalledOnce();
+    expect(listing).toHaveBeenCalledOnce();
+    await run({}, next);
+    expect(reddit.report).toHaveBeenCalledTimes(approvalDay === null ? 2 : 1);
   },
 );
 
-it("permanently exempts late approvals even while reporting is disabled", async () => {
-  await run();
-  settings.get.mockResolvedValue(false);
-  vi.mocked(Date.now).mockReturnValue(NOW + 30 * 86_400_000);
-  redis.get.mockResolvedValueOnce(comment.authorId);
-  await approve();
-  expect(redis.set).toHaveBeenLastCalledWith(authorKey, "approved");
-});
-
 it("honors an approval arriving while a report is being prepared", async () => {
-  redis.get.mockResolvedValueOnce(undefined).mockResolvedValue("approved");
+  let authorReads = 0;
+  redis.get.mockImplementation(async (key) =>
+    key === authorKey && ++authorReads > 1 ? "approved" : undefined,
+  );
   await run();
+  expect(redis.set).toHaveBeenCalledWith(commentKey, comment.authorId);
   expect(reddit.report).not.toHaveBeenCalled();
 });
 
@@ -195,8 +219,13 @@ it.each([
   ["claim", redis.set, 0],
   ["report", reddit.report, 1],
 ] as const)("handles %s failure", async (_, method, reports) => {
-  method.mockRejectedValueOnce(new Error("unavailable"));
+  const error = new Error("unavailable");
+  method.mockRejectedValueOnce(error);
   await run();
+  expect(console.error).toHaveBeenCalledWith(
+    "SeaBot commenter review failed",
+    error,
+  );
   expect(reddit.report).toHaveBeenCalledTimes(reports);
   expect(redis.del).not.toHaveBeenCalled();
   if (!reports) {

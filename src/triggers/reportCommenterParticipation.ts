@@ -55,6 +55,7 @@ const ReportCommenterParticipation: CommentCreateDefinition = {
       if (!authorId) return;
       const key = stateKey(authorId);
       if (await redis.get(key)) return;
+      if (await redis.get(stateKey(comment.id))) return;
       const at = comment.createdAt.getTime();
       if (!(at > 0 && at <= Date.now())) return;
       const history = await reddit
@@ -92,8 +93,8 @@ const ReportCommenterParticipation: CommentCreateDefinition = {
       await reddit.report(comment, {
         reason: `SeaBot review: prior activity in ${matches.map((sub) => `r/${sub}`).join(", ")}`,
       });
-    } catch {
-      console.error("SeaBot commenter review failed");
+    } catch (error) {
+      console.error("SeaBot commenter review failed", error);
     }
   },
 };

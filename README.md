@@ -27,11 +27,10 @@ Provides the ability to notify discord webhooks with embeds for:
 ### Commenter Review
 - Reports new r/Seattle comments when the author's sampled posts/comments include at least two distinct communities among r/PCOS, r/Testosterone, and r/Nashville. The report lists matches for manual account review.
 - Enabled by default; disable **Report commenters active in 2 of PCOS, Testosterone, Nashville** (`botTriageReportsEnabled`) in installation settings to stop it.
-- Checks up to 100 posts/comments at or before the triggering comment. The pinned SDK drops the requested sort, so the sample may not be the newest 100 or complete.
-- Skips deleted authors, service accounts, and removed, spam, approved, or ignored-report comments. Matching comments are re-fetched before reporting to check current status.
-- Reports an author at most once every seven days. An atomic Redis claim prevents concurrent duplicates and is retained if reporting fails ambiguously.
+- Checks up to 100 posts/comments at or before the triggering comment. The sample may not be the newest 100 or complete.
+- Skips deleted authors, service accounts, and removed, spam, approved, or ignored-report comments.
+- Reports an author at most once every seven days and does not report the same comment again.
 - Approving a comment flagged by this rule permanently exempts its author from this rule, including after the cooldown expires. Unrelated approvals do not create exemptions; approval events are processed even while reporting is disabled.
-- Redis stores author IDs/statuses and links from flagged comment IDs to their authors. Comment links and approval exemptions do not expire so late approvals still count; sampled history is not stored.
 
 ## Configuration
 
