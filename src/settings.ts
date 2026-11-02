@@ -102,6 +102,13 @@ const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
 ];
 
 const Settings: SettingsFormField[] = [
+  {
+    type: "boolean",
+    name: "botTriageReportsEnabled",
+    label: "Report commenters active in 2 of PCOS, Testosterone, Nashville",
+    defaultValue: true,
+    scope: SettingScope.Installation,
+  },
   // Discord webhook settings
   ...DISCORD_WEBHOOK_SETTINGS.map(({ name, label }) => ({
     type: "string" as const,
