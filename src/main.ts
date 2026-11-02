@@ -7,7 +7,6 @@ import {
   LogModmailMessage,
   LogPostReport,
   ReportCommenterParticipation,
-  DeleteCommenterReview,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
@@ -31,7 +30,6 @@ Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
 Devvit.addTrigger(ReportCommenterParticipation);
-Devvit.addTrigger(DeleteCommenterReview);
 
 /**
  * Register all menu items

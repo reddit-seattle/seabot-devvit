@@ -47,7 +47,7 @@ describe("settings.ts", () => {
     it("should have correct structure for all settings", () => {
       Settings.forEach((setting) => {
         const s = setting as any;
-        expect(["string", "boolean", "number", "paragraph"]).toContain(s.type);
+        expect(["string", "boolean"]).toContain(s.type);
         expect(s).toHaveProperty("name");
         expect(s).toHaveProperty("label");
         expect(s).toHaveProperty("scope", SettingScope.Installation);

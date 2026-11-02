@@ -1,110 +1,80 @@
-import type {
-  CommentCreateDefinition,
-  CommentDeleteDefinition,
-  TriggerContext,
-} from "@devvit/public-api";
-import { getParticipationMatches } from "../utils/participation.js";
+import type { Comment, CommentCreateDefinition } from "@devvit/public-api";
 
-const DAY_MS = 86_400_000;
-const caseKey = (id: string) => `seabot:triage:case:${id}`;
-const expiresIn = (ms: number) => new Date(Date.now() + ms);
-
-async function evaluateComment(
-  id: string,
-  context: TriggerContext,
-): Promise<void> {
-  const { reddit, redis, settings } = context;
-  const enabled = await settings.get("botTriageReportsEnabled");
-  if (enabled !== undefined && enabled !== true) return;
-  if (await redis.get(caseKey(id))) return;
-  const comment = await reddit.getCommentById(id);
-  const username = comment.authorName?.toLowerCase();
-  if (
-    comment.subredditName.toLowerCase() !== "seattle" ||
-    comment.removed ||
-    comment.spam ||
-    comment.approved ||
-    comment.ignoringReports ||
-    !username ||
-    [
-      "[deleted]",
-      "automoderator",
-      "seattle-modteam",
-      context.appName.toLowerCase(),
-    ].includes(username)
-  )
-    return;
-
-  const reportKey = `seabot:triage:report:${username}`;
-  if (await redis.get(reportKey)) return;
-  const recentKey = `seabot:triage:recent:two-of-three:${username}`;
-  if (
-    (await redis.set(recentKey, "1", {
-      nx: true,
-      expiration: expiresIn(15 * 60_000),
-    })) !== "OK"
-  )
-    return;
-
-  let matches: string[];
-  try {
-    matches = await getParticipationMatches(reddit, comment);
-  } catch (error) {
-    // A later comment can retry sooner after a history failure.
-    await redis.expire(recentKey, 120);
-    throw error;
-  }
-  if (matches.length < 2 || (await redis.get(caseKey(id)))) return;
-  // Atomic per-author claim prevents concurrent comments from duplicating reports.
-  if (
-    (await redis.set(reportKey, "1", {
-      nx: true,
-      expiration: expiresIn(7 * DAY_MS),
-    })) !== "OK"
-  )
-    return;
-
-  // Keep the claim if Reddit's response is lost: the report may have succeeded.
-  await reddit.report(comment, {
-    reason: `SeaBot review: prior activity in ${matches.map((sub) => `r/${sub}`).join(", ")}`,
-  });
-  // Store only a marker; NX preserves deletion tombstones.
-  await redis.set(caseKey(id), "processed", {
-    nx: true,
-    expiration: expiresIn(14 * DAY_MS),
-  });
-}
+const reviewable = (comment: Comment) =>
+  !comment.removed &&
+  !comment.spam &&
+  !comment.approved &&
+  !comment.ignoringReports;
 
 const ReportCommenterParticipation: CommentCreateDefinition = {
   event: "CommentCreate",
-  onEvent: async (event, context) => {
-    if (
-      context.subredditName?.toLowerCase() !== "seattle" ||
-      !event.comment?.id?.startsWith("t1_")
-    )
+  onEvent: async (
+    event,
+    { reddit, redis, settings, subredditName, appName },
+  ) => {
+    if (subredditName?.toLowerCase() !== "seattle" || !event.comment?.id)
       return;
     try {
-      await evaluateComment(event.comment.id, context);
+      const enabled = await settings.get("botTriageReportsEnabled");
+      if (enabled !== undefined && enabled !== true) return;
+      let comment = await reddit.getCommentById(event.comment.id);
+      const username = comment.authorName?.toLowerCase();
+      if (
+        !reviewable(comment) ||
+        comment.subredditName.toLowerCase() !== "seattle" ||
+        !username ||
+        [
+          "[deleted]",
+          "automoderator",
+          "seattle-modteam",
+          appName.toLowerCase(),
+        ].includes(username)
+      )
+        return;
+      const key = `seabot:triage:report:${username}`;
+      if (await redis.get(key)) return;
+      const at = comment.createdAt.getTime();
+      if (!(at > 0 && at <= Date.now())) return;
+      const history = await reddit
+        .getCommentsAndPostsByUser({
+          username,
+          sort: "new",
+          limit: 100,
+        })
+        .get(100);
+      const subs = new Set(
+        history
+          .filter(
+            (item) =>
+              item.createdAt.getTime() > 0 && item.createdAt.getTime() <= at,
+          )
+          .map((item) => item.subredditName.toLowerCase()),
+      );
+      const matches = ["pcos", "testosterone", "nashville"].filter((sub) =>
+        subs.has(sub),
+      );
+      if (matches.length < 2) return;
+
+      // Recheck deletion/moderation after the history lookup, before claiming a report.
+      comment = await reddit.getCommentById(comment.id);
+      if (!reviewable(comment) || comment.authorName.toLowerCase() !== username)
+        return;
+      if (
+        (await redis.set(key, "1", {
+          nx: true,
+          expiration: new Date(Date.now() + 7 * 86_400_000),
+        })) !== "OK"
+      )
+        return;
+      // Retain the claim on failure: Reddit may have accepted the report.
+      await reddit.report(comment, {
+        reason: `SeaBot review: prior activity in ${matches.map((sub) => `r/${sub}`).join(", ")}`,
+      });
     } catch {
       console.error(
-        "SeaBot commenter review: evaluation/report failed; check service availability",
+        "SeaBot commenter review failed; check service availability",
       );
     }
-  },
-};
-
-export const DeleteCommenterReview: CommentDeleteDefinition = {
-  event: "CommentDelete",
-  onEvent: async (event, context) => {
-    if (
-      context.subredditName?.toLowerCase() !== "seattle" ||
-      !event.commentId?.startsWith("t1_")
-    )
-      return;
-    // Let storage failures propagate so deletion can be retried.
-    await context.redis.set(caseKey(event.commentId), "deleted", {
-      expiration: expiresIn(14 * DAY_MS),
-    });
   },
 };
 

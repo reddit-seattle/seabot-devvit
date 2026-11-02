@@ -2,9 +2,7 @@ import AddCommentToRestrictedFlairPost from "./addRestrictedFlairPostComment.js"
 import LogCommentReports from "./logCommentReports.js";
 import LogModmailMessage from "./logModmail.js";
 import LogPostReport from "./logPostReports.js";
-import ReportCommenterParticipation, {
-  DeleteCommenterReview,
-} from "./reportCommenterParticipation.js";
+import ReportCommenterParticipation from "./reportCommenterParticipation.js";
 
 export {
   AddCommentToRestrictedFlairPost,
@@ -12,5 +10,4 @@ export {
   LogModmailMessage,
   LogPostReport,
   ReportCommenterParticipation,
-  DeleteCommenterReview,
 };

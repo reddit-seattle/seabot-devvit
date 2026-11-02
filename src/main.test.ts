@@ -5,7 +5,6 @@ import {
   LogModmailMessage,
   LogPostReport,
   ReportCommenterParticipation,
-  DeleteCommenterReview,
 } from "./triggers/index.js";
 
 // Mock Devvit API first
@@ -37,7 +36,6 @@ vi.mock("./triggers/index.js", () => ({
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
   ReportCommenterParticipation: { event: "CommentCreate", onEvent: vi.fn() },
-  DeleteCommenterReview: { event: "CommentDelete", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -78,7 +76,7 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(5);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
@@ -88,7 +86,6 @@ describe("main.ts", () => {
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
       ReportCommenterParticipation,
     );
-    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(DeleteCommenterReview);
   });
 
   it("should register all menu items dynamically", async () => {
