@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AddCommentToRestrictedFlairPost,
+  ApproveCommenterParticipation,
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
@@ -36,6 +37,7 @@ vi.mock("./triggers/index.js", () => ({
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
   ReportCommenterParticipation: { event: "CommentCreate", onEvent: vi.fn() },
+  ApproveCommenterParticipation: { event: "ModAction", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -56,6 +58,7 @@ describe("main.ts", () => {
 
     expect(mockDevvit.configure).toHaveBeenCalledWith({
       redditAPI: true,
+      redis: true,
       http: {
         domains: [
           "https://api-web.nhle.com",
@@ -75,13 +78,16 @@ describe("main.ts", () => {
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(5);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
       AddCommentToRestrictedFlairPost,
     );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogPostReport);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
+      ApproveCommenterParticipation,
+    );
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(
       ReportCommenterParticipation,
     );

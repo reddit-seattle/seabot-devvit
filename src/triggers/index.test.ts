@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AddCommentToRestrictedFlairPost,
+  ApproveCommenterParticipation,
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
@@ -11,6 +12,7 @@ const triggers = [
   LogCommentReports,
   LogModmailMessage,
   AddCommentToRestrictedFlairPost,
+  ApproveCommenterParticipation,
   LogPostReport,
   ReportCommenterParticipation,
 ];
@@ -19,7 +21,7 @@ describe("triggers index", () => {
   it("should export all triggers", () => {
     expect(triggers).toBeDefined();
     expect(Array.isArray(triggers)).toBe(true);
-    expect(triggers).toHaveLength(5);
+    expect(triggers).toHaveLength(6);
 
     // Verify each trigger has the required properties
     triggers.forEach((trigger) => {
@@ -36,5 +38,6 @@ describe("triggers index", () => {
     expect(events).toContain("PostFlairUpdate");
     expect(events).toContain("PostReport");
     expect(events).toContain("CommentCreate");
+    expect(events).toContain("ModAction");
   });
 });

@@ -1,13 +1,22 @@
 import type { TriggerContext } from "@devvit/public-api";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import trigger from "./reportCommenterParticipation.js";
+import trigger, {
+  ApproveCommenterParticipation,
+} from "./reportCommenterParticipation.js";
 
 const NOW = Date.UTC(2026, 10, 1);
 const item = (subredditName: string, at = NOW) => ({
   subredditName,
   createdAt: new Date(at),
 });
-const comment = { id: "t1_first", authorName: "Example", ...item("Seattle") };
+const comment = {
+  id: "t1_first",
+  authorId: "t2_author",
+  authorName: "Example",
+  ...item("Seattle"),
+};
+const authorKey = "seabot:review:t2_author";
+const commentKey = "seabot:review:t1_first";
 const listing = vi.fn();
 const reddit = {
   getCommentById: vi.fn(),
@@ -15,14 +24,20 @@ const reddit = {
   report: vi.fn(),
 };
 const settings = { get: vi.fn() };
+const redis = { get: vi.fn(), set: vi.fn(), del: vi.fn() };
 const context = {
   reddit,
   settings,
+  redis,
   subredditName: "Seattle",
   appName: "seattle-bot",
 } as unknown as TriggerContext;
 const run = (overrides: Partial<TriggerContext> = {}, event = { comment }) =>
   trigger.onEvent(event as never, { ...context, ...overrides });
+const approve = (
+  event = { action: "approvecomment", targetComment: { id: comment.id } },
+  ctx = context,
+) => ApproveCommenterParticipation.onEvent(event as never, ctx);
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(Date, "now").mockReturnValue(NOW);
@@ -30,6 +45,7 @@ beforeEach(() => {
   reddit.getCommentById.mockResolvedValue(comment);
   reddit.getCommentsAndPostsByUser.mockReturnValue({ get: listing });
   listing.mockResolvedValue([item("pcos"), item("nashville")]);
+  redis.set.mockResolvedValue("OK");
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -58,12 +74,17 @@ it.each([
   },
 );
 
-it("bounds history and reports the matching communities", async () => {
+it("bounds history and atomically reports one matching comment", async () => {
+  const claim = vi.fn().mockResolvedValueOnce("OK").mockResolvedValue("");
+  redis.set.mockImplementation((key) =>
+    key === authorKey ? claim() : Promise.resolve("OK"),
+  );
   listing.mockResolvedValue(
     [...Array(99).fill("PCOS"), "Nashville"].map((sub) => item(sub)),
   );
   settings.get.mockResolvedValue(true);
-  await run();
+  await Promise.all([run(), run()]);
+  expect(reddit.report).toHaveBeenCalledOnce();
   expect(reddit.getCommentsAndPostsByUser).toHaveBeenCalledWith({
     username: "example",
     sort: "new",
@@ -73,6 +94,14 @@ it("bounds history and reports the matching communities", async () => {
   expect(reddit.report).toHaveBeenCalledWith(comment, {
     reason: "SeaBot review: prior activity in r/pcos, r/nashville",
   });
+  expect(redis.set).toHaveBeenCalledWith(authorKey, "reported", {
+    nx: true,
+    expiration: new Date(NOW + 7 * 86_400_000),
+  });
+  expect(redis.set).toHaveBeenCalledWith(commentKey, comment.authorId);
+  expect(redis.set.mock.invocationCallOrder.slice(-1)[0]).toBeLessThan(
+    reddit.report.mock.invocationCallOrder[0],
+  );
 });
 
 it.each([false, null, "true"])("skips disabled setting %s", async (value) => {
@@ -88,6 +117,7 @@ it.each([
   [{ ignoringReports: true }],
   [{ subredditName: "elsewhere" }],
   [{ authorName: "" }],
+  [{ authorId: undefined }],
   [{ authorName: "[deleted]" }],
   [{ authorName: "AutoModerator" }],
   [{ authorName: "Seattle-ModTeam" }],
@@ -104,6 +134,8 @@ it.each([
     await run();
     expect(listing).toHaveBeenCalledTimes(recheck ? 1 : 0);
     expect(reddit.report).not.toHaveBeenCalled();
+    if (recheck && "approved" in changes)
+      expect(redis.set).toHaveBeenLastCalledWith(authorKey, "approved");
   },
 );
 
@@ -114,22 +146,59 @@ it("ignores other installations and missing comments", async () => {
   expect(reddit.getCommentById).not.toHaveBeenCalled();
 });
 
-it("reports each eligible comment from the same author", async () => {
-  const second = { ...comment, id: "t1_second" };
+it.each(["reported", "approved"])(
+  "honors author status %s after a month",
+  async (status) => {
+    redis.get.mockResolvedValue(status);
+    await run();
+    expect(listing).not.toHaveBeenCalled();
+    vi.mocked(Date.now).mockReturnValue(NOW + 30 * 86_400_000);
+    redis.get.mockResolvedValue(status === "approved" ? status : undefined);
+    await run();
+    expect(reddit.report).toHaveBeenCalledTimes(status === "approved" ? 0 : 1);
+  },
+);
+
+it("permanently exempts late approvals even while reporting is disabled", async () => {
   await run();
-  reddit.getCommentById.mockResolvedValue(second);
-  await run({}, { comment: second });
-  expect(reddit.report).toHaveBeenCalledTimes(2);
-  expect(reddit.report).toHaveBeenNthCalledWith(2, second, expect.anything());
+  settings.get.mockResolvedValue(false);
+  vi.mocked(Date.now).mockReturnValue(NOW + 30 * 86_400_000);
+  redis.get.mockResolvedValueOnce(comment.authorId);
+  await approve();
+  expect(redis.set).toHaveBeenLastCalledWith(authorKey, "approved");
+});
+
+it("honors an approval arriving while a report is being prepared", async () => {
+  redis.get.mockResolvedValueOnce(undefined).mockResolvedValue("approved");
+  await run();
+  expect(reddit.report).not.toHaveBeenCalled();
+});
+
+it("ignores unrelated approvals, other actions, and missing targets", async () => {
+  await approve();
+  await approve({ action: "removecomment", targetComment: { id: comment.id } });
+  await approve({ action: "approvecomment" } as never);
+  await approve(undefined, { ...context, subredditName: "elsewhere" });
+  await approve(undefined, { ...context, subredditName: undefined });
+  expect(redis.set).not.toHaveBeenCalled();
+  expect(redis.get).toHaveBeenCalledOnce();
+});
+
+it("surfaces approval storage failures instead of acknowledging success", async () => {
+  redis.get.mockResolvedValue(comment.authorId);
+  redis.set.mockRejectedValue(new Error("unavailable"));
+  await expect(approve()).rejects.toThrow("unavailable");
 });
 
 it.each([
   ["history", listing, 0],
+  ["claim", redis.set, 0],
   ["report", reddit.report, 1],
 ] as const)("handles %s failure", async (_, method, reports) => {
   method.mockRejectedValueOnce(new Error("unavailable"));
   await run();
   expect(reddit.report).toHaveBeenCalledTimes(reports);
+  expect(redis.del).not.toHaveBeenCalled();
   if (!reports) {
     await run();
     expect(reddit.report).toHaveBeenCalledOnce();

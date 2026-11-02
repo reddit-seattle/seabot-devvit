@@ -3,6 +3,7 @@ import { menuItems } from "./menuItems/index.js";
 import Settings from "./settings.js";
 import {
   AddCommentToRestrictedFlairPost,
+  ApproveCommenterParticipation,
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
@@ -10,6 +11,7 @@ import {
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
+  redis: true,
   http: {
     // You can ignore this. These endpoints are not used currently...
     domains: [
@@ -29,6 +31,7 @@ Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
 Devvit.addTrigger(ReportCommenterParticipation);
+Devvit.addTrigger(ApproveCommenterParticipation);
 
 /**
  * Register all menu items
