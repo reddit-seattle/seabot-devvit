@@ -24,12 +24,10 @@ Provides the ability to notify discord webhooks with embeds for:
 ### Bulk Actions
 - Comment nuke - Remove all comments in a single thread
 
-### Bot Campaign Triage
-- Assesses recent commenters in r/Seattle using campaign subreddit overlap, account age, and username shape
-- Separately measures repeated cross-subreddit sessions and CamelCase name expansion in shadow mode
-- Reports HIGH assessments to moderators by default; reporting can be disabled for shadow mode
-- Includes per-user cooldowns, a daily report cap, and expiring diagnostics
-- See [Bot Triage Setup](./docs/BotTriageSetup.md) for the rubric, settings, and retention
+### Commenter Review
+- Reports new r/Seattle comments when the author's sampled posts/comments include at least two of r/PCOS, r/Testosterone, and r/Nashville
+- Reports list the matching communities for manual account review, with a seven-day per-author cooldown
+- Enabled by default with one on/off setting; see [setup and limits](./docs/BotTriageSetup.md)
 
 ## Configuration
 

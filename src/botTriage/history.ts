@@ -1,44 +1,27 @@
-import type { TriggerContext } from "@devvit/public-api";
-import { HISTORY_LIMIT, type HistoryItem } from "./scoring.js";
+import type { Comment, TriggerContext } from "@devvit/public-api";
 
-export async function getRecentHistory(
+export async function getParticipationMatches(
   reddit: TriggerContext["reddit"],
-  username: string,
-  nowMs = Date.now(),
-): Promise<HistoryItem[]> {
-  const items = await reddit
+  comment: Pick<Comment, "authorName" | "createdAt">,
+): Promise<string[]> {
+  const at = comment.createdAt.getTime();
+  if (!(at > 0 && at <= Date.now())) throw new Error("Invalid comment timestamp");
+  const history = await reddit
     .getCommentsAndPostsByUser({
-      username,
+      username: comment.authorName,
       sort: "new",
-      limit: HISTORY_LIMIT,
+      limit: 100,
     })
-    .get(HISTORY_LIMIT);
-
-  // SDK 0.12.20 omits sort from the wire request. Verify the returned order
-  // instead of silently scoring a non-chronological sample or sorting it locally.
-  let previousTime = Infinity;
-  return items.map((item) => {
-    const time = item.createdAt.getTime();
-    if (
-      !Number.isFinite(time) ||
-      time <= 0 ||
-      time > nowMs ||
-      time > previousTime
-    ) {
-      throw new Error("Account history is not newest-first");
-    }
-    previousTime = time;
-    const kind = item.id.startsWith("t1_")
-      ? "comment"
-      : item.id.startsWith("t3_")
-        ? "post"
-        : null;
-    if (!kind) throw new Error("Unknown account history item type");
-    return {
-      id: item.id,
-      subreddit: item.subredditName,
-      createdAtMs: time,
-      kind,
-    };
-  });
+    .get(100);
+  // Listing order does not matter. Count only activity at/before the comment.
+  const subs = new Set(
+    history
+      .filter(
+        (item) => item.createdAt.getTime() > 0 && item.createdAt.getTime() <= at,
+      )
+      .map((item) =>
+        item.subredditName.trim().replace(/^\/?r\//i, "").toLowerCase(),
+      ),
+  );
+  return ["pcos", "testosterone", "nashville"].filter((sub) => subs.has(sub));
 }

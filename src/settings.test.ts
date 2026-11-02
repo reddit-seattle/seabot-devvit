@@ -28,12 +28,17 @@ describe("settings.ts", () => {
 
   describe("Settings array", () => {
     it("should contain all webhook settings", () => {
-      expect(Settings).toHaveLength(8);
+      expect(Settings).toHaveLength(4);
 
       const settingNames = Settings.map((setting) => (setting as any).name);
       expect(settingNames).toContain(POST_REPORT_WEBHOOK);
       expect(settingNames).toContain(COMMENT_REPORT_WEBHOOK);
       expect(settingNames).toContain(MODMAIL_REPORT_WEBHOOK);
+    });
+
+    it("enables the fixed participation rule by default", () => {
+      expect(Settings.find((s) => "name" in s && s.name === "botTriageReportsEnabled"))
+        .toMatchObject({ type: "boolean", defaultValue: true });
     });
 
     it("should have correct structure for all settings", () => {

@@ -1,219 +1,78 @@
 import type {
-  Comment,
   CommentCreateDefinition,
   CommentDeleteDefinition,
   TriggerContext,
 } from "@devvit/public-api";
-import {
-  assessAccount,
-  compactReportReason,
-  evaluationSignature,
-  LOCAL_SUBREDDIT,
-  shouldReport,
-  type Assessment,
-  type HistoryItem,
-  type ReportOptions,
-} from "../botTriage/scoring.js";
-import { readTriageSettings } from "../botTriage/settings.js";
-import { getRecentHistory } from "../botTriage/history.js";
-import {
-  assessBehavior,
-  assessExpandedName,
-  type BehaviorAssessment,
-} from "../botTriage/behavior.js";
+import { getParticipationMatches } from "../botTriage/history.js";
 
 const DAY_MS = 86_400_000;
-const CASE_RETENTION_MS = 14 * DAY_MS;
-const REPORT_COOLDOWN_MS = 7 * DAY_MS;
-const EVALUATION_THROTTLE_MS = 15 * 60_000;
-const caseKey = (commentId: string) => `seabot:triage:case:${commentId}`;
+const caseKey = (id: string) => `seabot:triage:case:${id}`;
 const expiresIn = (ms: number) => new Date(Date.now() + ms);
 
-interface CaseRecord {
-  commentId: string;
-  assessedAt: string;
-  assessment: Assessment;
-  behaviorShadow: BehaviorAssessment;
-  nameShadow: ReturnType<typeof assessExpandedName>;
-  action:
-    | "evaluated"
-    | "reported"
-    | "cooldown"
-    | "suppressed_daily_cap"
-    | "report_failed";
-}
-
-async function reportComment(
-  comment: Comment,
-  assessment: Assessment,
-  options: ReportOptions,
-  { redis, reddit }: TriggerContext,
-): Promise<CaseRecord["action"] | undefined> {
-  if (!shouldReport(assessment, options)) return "evaluated";
-  const claimKey = `seabot:triage:report:${comment.authorName.toLowerCase()}`;
-  if (await redis.get(claimKey)) return "cooldown";
-  if (options.dailyReportCap === 0) return "suppressed_daily_cap";
-
-  const day = new Date().toISOString().slice(0, 10);
-  const budgetKey = `seabot:triage:daily:${day}`;
-  await redis.set(budgetKey, "0", {
-    nx: true,
-    expiration: expiresIn(2 * DAY_MS),
-  });
-  const attempt = await redis.incrBy(budgetKey, 1);
-  let reportAttempted = false;
-  try {
-    if (attempt > options.dailyReportCap) return "suppressed_daily_cap";
-    // Finish cancellation checks before taking the seven-day report claim.
-    if (await redis.get(caseKey(comment.id))) return;
-    const reason = compactReportReason(assessment);
-    if (
-      (await redis.set(claimKey, "1", {
-        nx: true,
-        expiration: expiresIn(REPORT_COOLDOWN_MS),
-      })) !== "OK"
-    )
-      return "cooldown";
-
-    reportAttempted = true;
-    try {
-      await reddit.report(comment, { reason });
-      return "reported";
-    } catch {
-      // Reddit may have accepted a report whose response was lost. Keep both reservations.
-      console.error("SeaBot triage: report failed; cooldown retained");
-      return "report_failed";
-    }
-  } finally {
-    // Only requests sent to Reddit consume budget; definite skips/errors release their slot.
-    if (!reportAttempted) await redis.incrBy(budgetKey, -1);
-  }
-}
-
-async function evaluateComment(
-  commentId: string,
-  context: TriggerContext,
-): Promise<void> {
+async function evaluateComment(id: string, context: TriggerContext): Promise<void> {
   const { reddit, redis, settings } = context;
-  // Includes deletion tombstones, so a delayed create cannot restore deleted data.
-  if (await redis.get(caseKey(commentId))) return;
-  const comment = await reddit.getCommentById(commentId);
+  const enabled = await settings.get("botTriageReportsEnabled");
+  if (enabled !== undefined && enabled !== true) return;
+  if (await redis.get(caseKey(id))) return;
+  const comment = await reddit.getCommentById(id);
+  const username = comment.authorName?.toLowerCase();
   if (
-    comment.subredditName.toLowerCase() !== LOCAL_SUBREDDIT ||
+    comment.subredditName.toLowerCase() !== "seattle" ||
     comment.removed ||
     comment.spam ||
-    comment.approved
-  )
-    return;
-  const username = comment.authorName;
-  const userKey = username?.toLowerCase();
-  if (
-    !userKey ||
+    comment.approved ||
+    !username ||
     [
-      "[deleted]",
-      "automoderator",
-      `${LOCAL_SUBREDDIT}-modteam`,
-      context.appName.toLowerCase(),
-    ].includes(userKey)
+      "[deleted]", "automoderator", "seattle-modteam", context.appName.toLowerCase(),
+    ].includes(username)
   )
     return;
 
-  // Read one settings snapshot. Invalid configuration fails before any claims or reports.
-  const { config, options } = readTriageSettings(await settings.getAll());
-  const recentKey = `seabot:triage:recent:${evaluationSignature(config, options)}:${userKey}`;
+  const reportKey = `seabot:triage:report:${username}`;
+  if (await redis.get(reportKey)) return;
+  const recentKey = `seabot:triage:recent:two-of-three:${username}`;
   if (
     (await redis.set(recentKey, "1", {
       nx: true,
-      expiration: expiresIn(EVALUATION_THROTTLE_MS),
+      expiration: expiresIn(15 * 60_000),
     })) !== "OK"
   )
     return;
 
-  // Age and username shape are scoring signals, never prefilters.
-  let createdAtMs: number | null = null;
+  let matches: string[];
   try {
-    const user = await reddit.getUserByUsername(username);
-    createdAtMs = user?.createdAt.getTime() ?? null;
-  } catch {
-    console.warn("SeaBot triage: account age unavailable");
-  }
-  let historyAvailable = true;
-  let history: HistoryItem[] = [];
-  const evaluatedAtMs = Date.now();
-  const trigger: HistoryItem = {
-    id: comment.id,
-    subreddit: comment.subredditName,
-    kind: "comment",
-    createdAtMs: comment.createdAt?.getTime() ?? NaN,
-  };
-  try {
-    if (
-      !Number.isFinite(trigger.createdAtMs) ||
-      trigger.createdAtMs <= 0 ||
-      trigger.createdAtMs > evaluatedAtMs
-    )
-      throw new Error("Invalid trigger timestamp");
-    history = await getRecentHistory(reddit, username, evaluatedAtMs);
-  } catch {
-    historyAvailable = false;
-    // A later comment can retry sooner after a transient history failure.
+    matches = await getParticipationMatches(reddit, comment);
+  } catch (error) {
+    // A later comment can retry sooner after a history failure.
     await redis.expire(recentKey, 120);
-    console.warn("SeaBot triage: history unavailable");
+    throw error;
   }
+  if (matches.length < 2 || (await redis.get(caseKey(id)))) return;
+  // Atomic per-author claim prevents concurrent comments from duplicating reports.
+  if (
+    (await redis.set(reportKey, "1", {
+      nx: true,
+      expiration: expiresIn(7 * DAY_MS),
+    })) !== "OK"
+  )
+    return;
 
-  const assessment = assessAccount({
-    username,
-    createdAtMs,
-    historyAvailable,
-    history,
-    nowMs: evaluatedAtMs,
-    config,
+  // Keep the claim if Reddit's response is lost: the report may have succeeded.
+  await reddit.report(comment, {
+    reason: `SeaBot review: prior activity in ${matches.map((sub) => `r/${sub}`).join(", ")}`,
   });
-  const behaviorShadow = assessBehavior({
-    history,
-    historyAvailable,
-    trigger,
-    evaluatedAtMs,
-  });
-  const nameShadow = assessExpandedName(username, assessment);
-  const action = await reportComment(comment, assessment, options, context);
-  if (action === undefined) return;
-  const record: CaseRecord = {
-    commentId,
-    assessedAt: new Date(evaluatedAtMs).toISOString(),
-    assessment,
-    behaviorShadow,
-    nameShadow,
-    action,
-  };
-
-  // One final write cannot overwrite a deletion that arrived during evaluation/reporting.
-  const saved = await redis.set(caseKey(commentId), JSON.stringify(record), {
+  // Store only a marker; NX preserves deletion tombstones.
+  await redis.set(caseKey(id), "processed", {
     nx: true,
-    expiration: expiresIn(CASE_RETENTION_MS),
+    expiration: expiresIn(14 * DAY_MS),
   });
-  if (saved === "OK") {
-    // Shadow-mode distributions without exporting account identifiers or history.
-    console.log(
-      "SeaBot triage",
-      JSON.stringify({
-        tier: assessment.tier,
-        score: assessment.score,
-        dataQuality: assessment.dataQuality,
-        behaviorMatched: behaviorShadow.matched,
-        behaviorDataQuality: behaviorShadow.dataQuality,
-        expandedNameScore: nameShadow.score,
-        action: record.action,
-      }),
-    );
-  }
 }
 
 export const TriageComment: CommentCreateDefinition = {
   event: "CommentCreate",
   onEvent: async (event, context) => {
     if (
-      context.subredditName?.toLowerCase() !== LOCAL_SUBREDDIT ||
+      context.subredditName?.toLowerCase() !== "seattle" ||
       !event.comment?.id?.startsWith("t1_")
     )
       return;
@@ -221,7 +80,7 @@ export const TriageComment: CommentCreateDefinition = {
       await evaluateComment(event.comment.id, context);
     } catch {
       console.error(
-        "SeaBot triage: evaluation failed; check settings and service availability",
+        "SeaBot triage: evaluation/report failed; check service availability",
       );
     }
   },
@@ -231,14 +90,13 @@ export const DeleteTriageCase: CommentDeleteDefinition = {
   event: "CommentDelete",
   onEvent: async (event, context) => {
     if (
-      context.subredditName?.toLowerCase() !== LOCAL_SUBREDDIT ||
+      context.subredditName?.toLowerCase() !== "seattle" ||
       !event.commentId?.startsWith("t1_")
     )
       return;
-    // Keep only the comment ID and a marker, including when delete precedes create.
-    // Let storage errors propagate so deletion can be retried by Devvit.
+    // Let storage failures propagate so deletion can be retried.
     await context.redis.set(caseKey(event.commentId), "deleted", {
-      expiration: expiresIn(CASE_RETENTION_MS),
+      expiration: expiresIn(14 * DAY_MS),
     });
   },
 };
