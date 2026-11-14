@@ -18,7 +18,8 @@ describe("SendContentToWebhook", () => {
 
   describe("successful webhook calls", () => {
     it("should send basic embed to webhook", async () => {
-      mockFetch.mockResolvedValue(new Response("", { status: 200 }));
+      const response = new Response("", { status: 200 });
+      mockFetch.mockResolvedValue(response);
 
       const payload = {
         embeds: [
@@ -30,8 +31,9 @@ describe("SendContentToWebhook", () => {
         ],
       };
 
-      await SendContentToWebhook(webhookURL, payload);
+      const result = await SendContentToWebhook(webhookURL, payload);
 
+      expect(result).toBe(response);
       expect(mockFetch).toHaveBeenCalledOnce();
       expect(mockFetch).toHaveBeenCalledWith(webhookURL, {
         method: "post",

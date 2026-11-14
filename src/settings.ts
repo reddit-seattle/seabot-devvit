@@ -86,6 +86,15 @@ export const POST_REPORT_WEBHOOK = "postReportWebhookURL";
 export const COMMENT_REPORT_WEBHOOK = "commentReportWebhookURL";
 export const MODMAIL_REPORT_WEBHOOK = "modmailWebhookURL";
 
+export const SHADOWBAN_CONFIG = {
+  alertsStartAtMs: Date.parse("2026-11-14T00:00:00-08:00"),
+  moderatorName: "AutoModerator",
+  removalReason: "Removed for negative karma",
+  pageSize: 100,
+  maxPagesPerRun: 5,
+  warmupDelayMs: 60_000,
+} as const;
+
 const DISCORD_WEBHOOK_SETTINGS: { name: string; label: string }[] = [
   {
     name: POST_REPORT_WEBHOOK,

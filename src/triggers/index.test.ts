@@ -4,6 +4,7 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogFirstShadowban,
 } from "./index.js";
 
 const triggers = [
@@ -11,13 +12,14 @@ const triggers = [
   LogModmailMessage,
   AddCommentToRestrictedFlairPost,
   LogPostReport,
+  LogFirstShadowban,
 ];
 
 describe("triggers index", () => {
   it("should export all triggers", () => {
     expect(triggers).toBeDefined();
     expect(Array.isArray(triggers)).toBe(true);
-    expect(triggers).toHaveLength(4);
+    expect(triggers).toHaveLength(5);
 
     // Verify each trigger has the required properties
     triggers.forEach((trigger) => {
@@ -33,5 +35,6 @@ describe("triggers index", () => {
     expect(events).toContain("ModMail");
     expect(events).toContain("PostFlairUpdate");
     expect(events).toContain("PostReport");
+    expect(events).toContain("ModAction");
   });
 });

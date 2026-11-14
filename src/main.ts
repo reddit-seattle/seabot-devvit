@@ -2,16 +2,21 @@ import { Devvit } from "@devvit/public-api";
 import { menuItems } from "./menuItems/index.js";
 import Settings from "./settings.js";
 import {
+  ShadowbanWarmup,
+  startShadowbanWarmup,
+} from "./triggers/warmShadowbanCache.js";
+import {
   AddCommentToRestrictedFlairPost,
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogFirstShadowban,
 } from "./triggers/index.js";
 Devvit.configure({
   redditAPI: true,
   http: {
-    // You can ignore this. These endpoints are not used currently...
     domains: [
+      "discord.com", // Moderation alerts
       "https://api-web.nhle.com", // NHL API
       "https://api.nhle.com", // NHL REST API
       "https://statsapi.mlb.com", // MLB stats API
@@ -27,6 +32,12 @@ Devvit.addTrigger(LogCommentReports);
 Devvit.addTrigger(LogModmailMessage);
 Devvit.addTrigger(AddCommentToRestrictedFlairPost);
 Devvit.addTrigger(LogPostReport);
+Devvit.addTrigger(LogFirstShadowban);
+Devvit.addSchedulerJob(ShadowbanWarmup);
+Devvit.addTrigger({
+  events: ["AppInstall", "AppUpgrade"],
+  onEvent: startShadowbanWarmup,
+});
 
 /**
  * Register all menu items
