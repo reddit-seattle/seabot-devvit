@@ -4,7 +4,12 @@ import {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogFirstShadowban,
 } from "./triggers/index.js";
+import {
+  ShadowbanWarmup,
+  startShadowbanWarmup,
+} from "./triggers/warmShadowbanCache.js";
 
 // Mock Devvit API first
 const mockDevvit = {
@@ -12,7 +17,13 @@ const mockDevvit = {
   addTrigger: vi.fn(),
   addMenuItem: vi.fn(),
   addSettings: vi.fn(),
+  addSchedulerJob: vi.fn(),
 };
+
+vi.mock("./triggers/warmShadowbanCache.js", () => ({
+  ShadowbanWarmup: { name: "shadowban-warmup", onRun: vi.fn() },
+  startShadowbanWarmup: vi.fn(),
+}));
 
 vi.mock("@devvit/public-api", () => ({
   Devvit: mockDevvit,
@@ -34,6 +45,7 @@ vi.mock("./triggers/index.js", () => ({
     onEvent: vi.fn(),
   },
   LogPostReport: { event: "PostReport", onEvent: vi.fn() },
+  LogFirstShadowban: { event: "ModAction", onEvent: vi.fn() },
 }));
 
 vi.mock("./settings.js", () => ({
@@ -56,6 +68,7 @@ describe("main.ts", () => {
       redditAPI: true,
       http: {
         domains: [
+          "discord.com",
           "https://api-web.nhle.com",
           "https://api.nhle.com",
           "https://statsapi.mlb.com",
@@ -69,11 +82,19 @@ describe("main.ts", () => {
     // Reset modules and clear mocks first
     vi.resetModules();
     mockDevvit.addTrigger.mockClear();
+    mockDevvit.addSchedulerJob.mockClear();
 
     // Import main to trigger registration
     await import("./main.js");
 
-    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(4);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledTimes(6);
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith({
+      events: ["AppInstall", "AppUpgrade"],
+      onEvent: startShadowbanWarmup,
+    });
+    expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogFirstShadowban);
+    expect(mockDevvit.addSchedulerJob).toHaveBeenCalledTimes(1);
+    expect(mockDevvit.addSchedulerJob).toHaveBeenCalledWith(ShadowbanWarmup);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogCommentReports);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(LogModmailMessage);
     expect(mockDevvit.addTrigger).toHaveBeenCalledWith(

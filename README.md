@@ -11,6 +11,7 @@ Provides the ability to notify discord webhooks with embeds for:
 - New post reports
 - New comment reports
 - New modmail messages
+- First shadowban per user (via the modmail webhook)
 
 ### Quick Removal Actions
 - Configurable quick-removal menu items using subreddit removal reason title matching

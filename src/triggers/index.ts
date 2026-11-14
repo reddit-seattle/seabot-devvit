@@ -1,3 +1,4 @@
+import LogFirstShadowban from "./logFirstShadowban.js";
 import AddCommentToRestrictedFlairPost from "./addRestrictedFlairPostComment.js";
 import LogCommentReports from "./logCommentReports.js";
 import LogModmailMessage from "./logModmail.js";
@@ -8,4 +9,5 @@ export {
   LogCommentReports,
   LogModmailMessage,
   LogPostReport,
+  LogFirstShadowban,
 };
