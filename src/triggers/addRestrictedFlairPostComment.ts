@@ -1,19 +1,12 @@
 import { PostFlairUpdateDefinition } from "@devvit/public-api";
-import {
-  RESTRICTED_FLAIR_COMMENT_TEXT,
-  RESTRICTED_FLAIR_TEXT,
-} from "../settings.js";
-
-// Prefix of bot comment text to search for existing comments, this helps avoid
-// issues with text formatting inconsistencies, adjust slice length as needed.
-const commentSearchText = RESTRICTED_FLAIR_COMMENT_TEXT.slice(0, 30);
+import { RESTRICTED_FLAIR_MODES } from "../settings.js";
 
 /**
- * Action specific posts with a flair to restrict unflaired commenters.
- * When a post's flair is updated to RESTRICTED_FLAIR_TEXT, this trigger:
+ * Announce Market Traffic Only or Market Bollards restrictions.
+ * When a post's flair is updated to a recognized restricted flair, this trigger:
  * 1. Checks if the post already has a distinguished and stickied comment
- *    containing the RESTRICTED_FLAIR_COMMENT_TEXT and returns early if found.
- * 2. Adds a new comment to the post of RESTRICTED_FLAIR_COMMENT_TEXT,
+ *    containing that mode's announcement and returns early if found.
+ * 2. Adds a new comment to the post explaining the selected mode,
  *    distinguishes and locks the comment to prevent further replies.
  *
  * @remarks
@@ -25,7 +18,13 @@ const AddCommentToRestrictedFlairPost: PostFlairUpdateDefinition = {
   onEvent: async (event, context) => {
     try {
       // Check if the updated flair text matches the target
-      if (event.post?.linkFlair?.text === RESTRICTED_FLAIR_TEXT) {
+      const restriction = RESTRICTED_FLAIR_MODES.find(
+        ({ flairText }) => event.post?.linkFlair?.text === flairText,
+      );
+      if (restriction && event.post) {
+        // Prefix of bot comment text to search for existing comments, this helps avoid
+        // issues with text formatting inconsistencies, adjust slice length as needed.
+        const commentSearchText = restriction.commentText.slice(0, 30);
         // Check if the post already has a comment
         const existingComments = await context.reddit
           .getComments({
@@ -50,7 +49,7 @@ const AddCommentToRestrictedFlairPost: PostFlairUpdateDefinition = {
         // Add a comment to the post
         const comment = await context.reddit.submitComment({
           id: event.post.id,
-          text: RESTRICTED_FLAIR_COMMENT_TEXT,
+          text: restriction.commentText,
           runAs: "APP",
         });
         await comment.distinguish(true);

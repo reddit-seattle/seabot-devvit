@@ -6,6 +6,26 @@ export const RESTRICTED_FLAIR_COMMENT_TEXT = `This thread has been designated \`
 
 Existing comments are not removed when this action is applied, **please do not report missing flair** in these threads.`;
 
+export const BOLLARDS_FLAIR_TEXT = "Market Bollards";
+export const BOLLARDS_FLAIR_COMMENT_TEXT = `**Market Bollards are Up!**
+
+This thread has reached a broad audience and/or concerns a potentially sensitive or controversial topic. Participation is limited to established contributors with a substantial history of constructive participation in this subreddit and across Reddit. Participants must also set a subreddit user flair and have a verified email address or phone number associated with their Reddit account.`;
+
+export const RESTRICTED_FLAIR_MODES = [
+  {
+    label: "Require Flair for Comments",
+    description: "Restrict this post to flaired users",
+    flairText: RESTRICTED_FLAIR_TEXT,
+    commentText: RESTRICTED_FLAIR_COMMENT_TEXT,
+  },
+  {
+    label: "Raise Market Bollards",
+    description: "Apply strict contributor requirements to this thread",
+    flairText: BOLLARDS_FLAIR_TEXT,
+    commentText: BOLLARDS_FLAIR_COMMENT_TEXT,
+  },
+];
+
 /**
  * Discord Custom Emojis for upvotes/downvotes
  *

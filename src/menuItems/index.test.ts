@@ -5,7 +5,7 @@ describe("menuItems index", () => {
   it("should export all menu items", () => {
     expect(menuItems).toBeDefined();
     expect(Array.isArray(menuItems)).toBe(true);
-    expect(menuItems).toHaveLength(5);
+    expect(menuItems).toHaveLength(6);
 
     // Verify each menu item has the required properties
     menuItems.forEach((item) => {
@@ -21,6 +21,7 @@ describe("menuItems index", () => {
     expect(labels).toContain("Remove: Not Seattle-Related");
     expect(labels).toContain("Remove: Be Good");
     expect(labels).toContain("Require Flair for Comments");
+    expect(labels).toContain("Raise Market Bollards");
     expect(labels).toContain("Comment Nuke");
   });
 });

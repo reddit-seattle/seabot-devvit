@@ -1,6 +1,8 @@
 import { Context } from "@devvit/public-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  BOLLARDS_FLAIR_COMMENT_TEXT,
+  BOLLARDS_FLAIR_TEXT,
   RESTRICTED_FLAIR_COMMENT_TEXT,
   RESTRICTED_FLAIR_TEXT,
 } from "../settings.js";
@@ -51,6 +53,39 @@ describe("AddCommentToRestrictedFlairPost", () => {
 
   it("should have correct event type", () => {
     expect(AddCommentToRestrictedFlairPost.event).toBe("PostFlairUpdate");
+  });
+
+  it.each([
+    [BOLLARDS_FLAIR_TEXT, BOLLARDS_FLAIR_COMMENT_TEXT, RESTRICTED_FLAIR_COMMENT_TEXT],
+    [RESTRICTED_FLAIR_TEXT, RESTRICTED_FLAIR_COMMENT_TEXT, BOLLARDS_FLAIR_COMMENT_TEXT],
+  ])("announces %s even when the other mode has an announcement", async (flair, text, previousText) => {
+    vi.mocked(mockContext.reddit.getComments).mockReturnValue({
+      all: vi.fn().mockResolvedValue([{ ...mockExistingComment, body: previousText }]),
+    } as any);
+    await AddCommentToRestrictedFlairPost.onEvent(
+      { post: { ...mockPost, linkFlair: { text: flair } } } as any,
+      mockContext,
+    );
+    expect(mockContext.reddit.submitComment).toHaveBeenCalledExactlyOnceWith({
+      id: "post123", text, runAs: "APP",
+    });
+    expect(mockComment.distinguish).toHaveBeenCalledWith(true);
+    expect(mockComment.lock).toHaveBeenCalled();
+  });
+
+  it.each([false, true])("handles an existing Bollards announcement (removed: %s)", async (removed) => {
+    vi.mocked(mockContext.reddit.getComments).mockReturnValue({
+      all: vi.fn().mockResolvedValue([{
+        ...mockExistingComment,
+        body: BOLLARDS_FLAIR_COMMENT_TEXT,
+        isRemoved: () => removed,
+      }]),
+    } as any);
+    await AddCommentToRestrictedFlairPost.onEvent(
+      { post: { ...mockPost, linkFlair: { text: BOLLARDS_FLAIR_TEXT } } } as any,
+      mockContext,
+    );
+    expect(mockContext.reddit.submitComment).toHaveBeenCalledTimes(removed ? 1 : 0);
   });
 
   it("should add comment when post has restricted flair and no existing comment", async () => {
