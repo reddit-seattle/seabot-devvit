@@ -16,7 +16,7 @@ Provides the ability to notify discord webhooks with embeds for:
 - Configurable quick-removal menu items using subreddit removal reason title matching
 - Automatically fetches and applies subreddit removal reasons
 
-### `Market Traffic Only` Flaired user restrictions
+### `Market Traffic Only` and `Market Bollards` restrictions
 - Provides a quick button to add a custom post flair to chosen posts
 - Stickies a custom comment when those posts are flaired
 - See [Restricted Flair Setup](./docs/RestrictedFlairSetup.md) for more detail
